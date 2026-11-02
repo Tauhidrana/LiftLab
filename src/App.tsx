@@ -26,12 +26,14 @@ function Logo() {
   return (
     <div className="flex items-center gap-2">
       <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
-        <rect x="3" y="1.5" width="14" height="17" rx="2" fill="none" stroke="#3ad1e8" strokeWidth="1.5" />
-        <line x1="10" y1="1.5" x2="10" y2="6" stroke="#3ad1e8" strokeWidth="1.5" />
-        <rect x="6" y="6" width="8" height="7" rx="1" fill="#3ad1e8" />
+        <rect x="0" y="0" width="20" height="20" rx="5" fill="#4c9aff" />
+        <rect x="5.5" y="4" width="9" height="12" rx="1.2" fill="none" stroke="#fff" strokeWidth="1.5" />
+        <line x1="10" y1="4" x2="10" y2="16" stroke="#fff" strokeWidth="1.5" />
       </svg>
-      <span className="text-[14px] font-semibold tracking-tight text-ink">LiftLab</span>
-      <span className="hidden font-mono text-[10px] text-faint md:inline">elevator engineering lab</span>
+      <div className="flex flex-col leading-none">
+        <span className="text-[14px] font-semibold tracking-tight text-ink">LiftLab</span>
+        <span className="mt-0.5 hidden text-[10.5px] text-faint md:inline">Elevator engineering lab</span>
+      </div>
     </div>
   )
 }
@@ -43,24 +45,23 @@ export default function App() {
   const s = useLab(useShallow((st) => ({ state: st.snapshot.state, op: st.operation, alg: st.config.algorithm, floors: st.config.floors })))
   return (
     <div className="flex h-full flex-col">
-      <header className="flex h-11 shrink-0 items-center gap-4 overflow-x-auto border-b border-line bg-surface px-4 [scrollbar-width:none] md:gap-6">
+      <header className="flex h-13 shrink-0 items-center gap-4 overflow-x-auto border-b border-line bg-surface px-4 [scrollbar-width:none] md:gap-8">
         <Logo />
-        <nav className="flex h-full shrink-0 items-center gap-0.5">
+        <nav className="flex shrink-0 items-center gap-0.5 rounded-lg bg-surface-2 p-1">
           {NAV.map((n) => (
             <button
               key={n.id}
               onClick={() => setPage(n.id)}
               className={clsx(
-                'relative h-full px-2 text-[12.5px] whitespace-nowrap transition-colors md:px-3',
-                page === n.id ? 'text-ink' : 'text-muted hover:text-ink-2',
+                'h-7 rounded-md px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors md:px-3',
+                page === n.id ? 'bg-surface-3 text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]' : 'text-muted hover:text-ink',
               )}
             >
               {n.label}
-              {page === n.id && <span className="absolute inset-x-3 bottom-0 h-px bg-accent" />}
             </button>
           ))}
         </nav>
-        <div className="ml-auto hidden items-center gap-3 font-mono text-[11px] text-muted sm:flex">
+        <div className="ml-auto hidden items-center gap-3 text-[12px] text-muted sm:flex">
           <span className="hidden lg:inline">
             {s.floors} floors · {s.alg} · {s.op}
           </span>

@@ -14,7 +14,7 @@ export function Btn({
       {...rest}
       className={clsx(
         'inline-flex items-center justify-center gap-1.5 rounded-md border font-medium transition-colors select-none disabled:opacity-40',
-        size === 'sm' ? 'h-6 px-2 text-[11px]' : 'h-7 px-2.5 text-xs',
+        size === 'sm' ? 'h-6 px-2 text-[11px]' : 'h-8 px-3 text-xs',
         tone === 'danger'
           ? active
             ? 'border-danger bg-danger/25 text-white'
@@ -63,9 +63,9 @@ export function Segmented<T extends string | number>({
 
 export function PanelHeader({ title, children, icon }: { title: string; children?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="flex h-9 shrink-0 items-center gap-2 border-b border-line px-3">
+    <div className="flex h-10 shrink-0 items-center gap-2 border-b border-line px-4">
       {icon && <span className="text-muted">{icon}</span>}
-      <span className="text-[13px] font-semibold text-ink">{title}</span>
+      <span className="text-[12px] font-semibold tracking-wide text-ink-2 uppercase">{title}</span>
       <div className="ml-auto flex items-center gap-1.5">{children}</div>
     </div>
   )
@@ -103,8 +103,9 @@ export const STATE_TONE: Record<ElevatorState, string> = {
 
 export function StatePill({ state }: { state: ElevatorState }) {
   return (
-    <span className={clsx('inline-flex h-5 items-center rounded border px-1.5 font-mono text-[11px] font-medium', STATE_TONE[state])}>
-      {state}
+    <span className={clsx('inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[10.5px] font-semibold tracking-wide', STATE_TONE[state])}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {state.replace('_', ' ')}
     </span>
   )
 }
@@ -114,7 +115,7 @@ export const CATEGORY_COLOR: Record<TraceCategory, string> = {
   queue: '#a78bfa',
   scheduler: '#c084fc',
   controller: '#60a5fa',
-  state: '#3ad1e8',
+  state: '#4c9aff',
   motor: '#f5a524',
   brake: '#fb923c',
   motion: '#94a3b8',

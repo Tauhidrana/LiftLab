@@ -238,7 +238,7 @@ function Monitor({ g }: { g: GroupController }) {
         const x = gutter + i * (col + gap)
         const y = yOf(c.motion.position)
         const state = c.sm.state
-        const fill = state === 'EMERGENCY' ? '#f2545b' : c.doors.position > 0.05 ? '#4ade80' : '#3ad1e8'
+        const fill = state === 'EMERGENCY' ? '#f2545b' : c.doors.position > 0.05 ? '#4ade80' : '#4c9aff'
         const riders = g.traffic.riders(i).length
         return (
           <g key={i}>
@@ -248,7 +248,7 @@ function Monitor({ g }: { g: GroupController }) {
             <rect x={x} y={34} width={col} height={floors * row} rx={4} fill="#14171c" stroke="#252a32" />
             {/* promised stops */}
             {c.carCalls.map((cc) => (
-              <circle key={`c${cc.floor}`} cx={x + 12} cy={yOf((cc.floor - 1) * g.config.floorHeight) + row / 2} r={3.5} fill="#3ad1e8" />
+              <circle key={`c${cc.floor}`} cx={x + 12} cy={yOf((cc.floor - 1) * g.config.floorHeight) + row / 2} r={3.5} fill="#4c9aff" />
             ))}
             {c.hallCalls.map((h) => (
               <text key={`h${h.floor}${h.direction}`} x={x + col - 14} y={yOf((h.floor - 1) * g.config.floorHeight) + row / 2 + 4} fontSize="11" fill="#ffb547">

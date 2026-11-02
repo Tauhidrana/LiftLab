@@ -206,7 +206,7 @@ function MachineRoom({ d, xray }: { d: Dims; xray: boolean }) {
       mat.emissive.set(on ? col : '#111')
       mat.emissiveIntensity = on ? 2 : 0.2
     }
-    set(0, s.startsWith('MOVING'), '#3ad1e8')
+    set(0, s.startsWith('MOVING'), '#4c9aff')
     set(1, s.startsWith('DOOR'), '#a3e635')
     set(2, s === 'EMERGENCY' && Math.floor(performance.now() / 300) % 2 === 0, '#ef4444')
   })

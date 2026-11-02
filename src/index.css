@@ -1,24 +1,24 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-bg: #0f1115;
-  --color-surface: #14171c;
-  --color-surface-2: #191d23;
-  --color-surface-3: #20252c;
-  --color-line: #252a32;
-  --color-line-strong: #323843;
-  --color-ink: #e8eaed;
-  --color-ink-2: #b0b7c1;
-  --color-muted: #878f9b;
-  --color-faint: #5e6672;
-  --color-accent: #3ad1e8;
-  --color-accent-dim: #0f4a55;
+  --color-bg: #0a0c10;
+  --color-surface: #101318;
+  --color-surface-2: #151920;
+  --color-surface-3: #1c2129;
+  --color-line: #20252d;
+  --color-line-strong: #2b313b;
+  --color-ink: #eef0f3;
+  --color-ink-2: #b7bdc6;
+  --color-muted: #8b929d;
+  --color-faint: #5d646f;
+  --color-accent: #4c9aff;
+  --color-accent-dim: #13325c;
   --color-lamp: #ffb547;
   --color-warn: #f5a524;
   --color-danger: #f2545b;
   --color-ok: #4ade80;
-  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
   --font-dot: 'Doto', 'IBM Plex Mono', monospace;
 }
 
@@ -37,13 +37,14 @@ body {
   font-family: var(--font-sans);
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2f353e transparent;
+  scrollbar-color: #2b313b transparent;
 }
 ::selection {
-  background: #0e4f5c;
+  background: #1d4f8f;
 }
 button {
   cursor: pointer;
@@ -63,14 +64,14 @@ button:disabled {
 .tok-com { color: #5b6573; font-style: italic; }
 .tok-fn { color: #82aaff; }
 .tok-type { color: #ffcb6b; }
-.tok-marker { color: #3ad1e8; }
+.tok-marker { color: #4c9aff; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
 @keyframes flash {
-  from { background: rgba(58, 209, 232, 0.16); }
+  from { background: rgba(76, 154, 255, 0.16); }
   to { background: transparent; }
 }
 .flash { animation: flash 900ms ease-out; }

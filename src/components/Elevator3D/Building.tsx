@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { runtime } from '../../store/runtime'
 import { useLab } from '../../store/useLab'
 import type { Dims } from './dims'
-import { font, HLMaterial, makeCanvasTexture, Pickable } from './parts'
+import { font, HLMaterial, makeCanvasTexture, Pickable, surfaceTexture } from './parts'
 
 interface Props {
   d: Dims
@@ -13,13 +13,13 @@ interface Props {
   display: THREE.Texture
 }
 
-const SLAB = '#58606b'
-const WALL = '#4b525c'
+const GLASS = '#a9c2d3'
 
 export function Building({ d, xray, clip, display }: Props) {
   const floors = useMemo(() => Array.from({ length: d.floors }, (_, i) => i + 1), [d.floors])
-  const slabOpacity = xray ? 0.07 : 0.72
-  const wallOpacity = xray ? 0.05 : 0.22
+  const slabOpacity = xray ? 0.07 : 1
+  const wallOpacity = xray ? 0.05 : 0.16
+  const landingOpacity = xray ? 0.08 : 1
   const { building: b, shaft: s } = d
 
   return (
@@ -31,8 +31,8 @@ export function Building({ d, xray, clip, display }: Props) {
       </mesh>
       {/* Ground plane */}
       <mesh position={[0, -0.22, 0]} rotation-x={-Math.PI / 2} receiveShadow>
-        <circleGeometry args={[30, 48]} />
-        <meshStandardMaterial color="#101317" roughness={1} />
+        <circleGeometry args={[30, 64]} />
+        {xray ? <meshStandardMaterial color="#101317" roughness={1} /> : <meshStandardMaterial color="#8e8f8d" map={surfaceTexture('concrete', 14, 14)} roughness={0.95} />}
       </mesh>
 
       {floors.map((f) => {
@@ -46,9 +46,9 @@ export function Building({ d, xray, clip, display }: Props) {
             <Slab x0={s.x1 + 0.15} x1={b.x1} z0={s.z0 - 0.15} z1={s.z1 + 0.1} opacity={slabOpacity} clip={clip} />
 
             {/* Landing wall around the door opening */}
-            <WallPanel x0={s.x0} x1={-d.door.open / 2} y0={0} y1={d.H - 0.2} opacity={xray ? 0.08 : 0.85} clip={clip} z={d.door.landingZ + 0.06} />
-            <WallPanel x0={d.door.open / 2} x1={s.x1} y0={0} y1={d.H - 0.2} opacity={xray ? 0.08 : 0.85} clip={clip} z={d.door.landingZ + 0.06} />
-            <WallPanel x0={-d.door.open / 2} x1={d.door.open / 2} y0={2.2} y1={d.H - 0.2} opacity={xray ? 0.08 : 0.85} clip={clip} z={d.door.landingZ + 0.06} />
+            <WallPanel x0={s.x0} x1={-d.door.open / 2} y0={0} y1={d.H - 0.2} opacity={landingOpacity} clip={clip} z={d.door.landingZ + 0.06} />
+            <WallPanel x0={d.door.open / 2} x1={s.x1} y0={0} y1={d.H - 0.2} opacity={landingOpacity} clip={clip} z={d.door.landingZ + 0.06} />
+            <WallPanel x0={-d.door.open / 2} x1={d.door.open / 2} y0={2.2} y1={d.H - 0.2} opacity={landingOpacity} clip={clip} z={d.door.landingZ + 0.06} />
 
             <FloorSign floor={f} x={-0.9} y={1.95} z={d.door.landingZ + 0.1} />
             {/* Landing position indicator above the door */}
@@ -68,12 +68,12 @@ export function Building({ d, xray, clip, display }: Props) {
       {/* Shaft walls: back and sides (glass-like so the machinery stays visible) */}
       <mesh position={[0, (d.pitBottom + d.shaftTop) / 2, s.z0 - 0.08]}>
         <boxGeometry args={[s.x1 - s.x0 + 0.3, d.shaftTop - d.pitBottom, 0.1]} />
-        <HLMaterial color={WALL} transparent opacity={wallOpacity} roughness={0.8} clip={clip} />
+        <HLMaterial color={GLASS} transparent opacity={wallOpacity} roughness={0.05} metalness={0.3} clip={clip} />
       </mesh>
       {[s.x0 - 0.08, s.x1 + 0.08].map((x) => (
         <mesh key={x} position={[x, (d.pitBottom + d.shaftTop) / 2, (s.z0 + s.z1) / 2]}>
           <boxGeometry args={[0.1, d.shaftTop - d.pitBottom, s.z1 - s.z0 + 0.15]} />
-          <HLMaterial color={WALL} transparent opacity={wallOpacity} roughness={0.8} clip={clip} />
+          <HLMaterial color={GLASS} transparent opacity={wallOpacity} roughness={0.05} metalness={0.3} clip={clip} />
         </mesh>
       ))}
 
@@ -86,7 +86,7 @@ export function Building({ d, xray, clip, display }: Props) {
       ].map(([x, z]) => (
         <mesh key={`${x}${z}`} position={[x, d.shaftTop / 2 - 0.1, z]} castShadow>
           <boxGeometry args={[0.3, d.shaftTop, 0.3]} />
-          <HLMaterial color={SLAB} transparent={xray} opacity={xray ? 0.1 : 1} roughness={0.8} clip={clip} />
+          <HLMaterial color="#ffffff" map={surfaceTexture('concrete', 1, 8)} transparent={xray} opacity={xray ? 0.1 : 1} roughness={0.85} clip={clip} />
         </mesh>
       ))}
       {/* Roof slab */}
@@ -104,7 +104,7 @@ function Slab({ x0, x1, z0, z1, opacity, clip }: { x0: number; x1: number; z0: n
   return (
     <mesh position={[(x0 + x1) / 2, -0.11, (z0 + z1) / 2]} receiveShadow castShadow={opacity > 0.5}>
       <boxGeometry args={[x1 - x0, 0.2, z1 - z0]} />
-      <HLMaterial color={SLAB} roughness={0.85} metalness={0.05} transparent={opacity < 1} opacity={opacity} clip={clip} />
+      <HLMaterial color="#d2d0cb" map={surfaceTexture('concrete', 3, 3)} roughness={0.85} metalness={0.05} transparent={opacity < 1} opacity={opacity} clip={clip} />
     </mesh>
   )
 }
@@ -113,7 +113,7 @@ function WallPanel(p: { x0: number; x1: number; y0: number; y1: number; z: numbe
   return (
     <mesh position={[(p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2, p.z]} receiveShadow>
       <boxGeometry args={[p.x1 - p.x0, p.y1 - p.y0, 0.06]} />
-      <HLMaterial color="#5a616b" roughness={0.6} metalness={0.2} transparent={p.opacity < 1} opacity={p.opacity} clip={p.clip} />
+      <HLMaterial color="#e2ddd4" map={surfaceTexture('ceiling')} roughness={0.55} metalness={0} transparent={p.opacity < 1} opacity={p.opacity} clip={p.clip} />
     </mesh>
   )
 }
@@ -221,7 +221,7 @@ function LandingDoors({ d }: { d: Dims }) {
           {[0, 1].map((k) => (
             <mesh key={k} castShadow>
               <boxGeometry args={[half, 2.2, 0.04]} />
-              <meshStandardMaterial color="#9aa3ad" metalness={0.85} roughness={0.28} />
+              <meshStandardMaterial color="#ffffff" map={surfaceTexture('brushed', 1, 1)} metalness={0.85} roughness={0.32} />
             </mesh>
           ))}
         </group>

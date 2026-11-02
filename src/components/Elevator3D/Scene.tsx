@@ -1,4 +1,4 @@
-import { CameraControls } from '@react-three/drei'
+import { CameraControls, CameraControlsImpl } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -17,7 +17,7 @@ const dot = (px: number) => `900 ${px}px Doto, "IBM Plex Mono", monospace`
 export function ElevatorScene({ variant = 'simulation' }: { variant?: 'simulation' | 'architecture' }) {
   return (
     <Canvas
-      shadows
+      shadows="soft"
       dpr={[1, 2]}
       camera={{ fov: 38, near: 0.05, far: 400, position: [20, 16, 28] }}
       gl={{ antialias: true, localClippingEnabled: true } as THREE.WebGLRendererParameters & { localClippingEnabled: boolean }}
@@ -27,8 +27,6 @@ export function ElevatorScene({ variant = 'simulation' }: { variant?: 'simulatio
       }}
       onPointerMissed={() => variant === 'architecture' && useLab.getState().selectComponent(null)}
     >
-      <color attach="background" args={['#0b0d10']} />
-      <fog attach="fog" args={['#0b0d10', 60, 140]} />
       <SceneContents variant={variant} />
     </Canvas>
   )
@@ -46,13 +44,18 @@ function SceneContents({ variant }: { variant: 'simulation' | 'architecture' }) 
   const clip = useMemo(() => (cutaway ? [new THREE.Plane(new THREE.Vector3(-1, 0, 0), d.shaft.x1 - 0.02)] : []), [cutaway, d])
   const display = useDisplayTexture()
 
+  // Realistic daylight by default; the dark blueprint look is kept for the x-ray / engineering lens.
+  const bg = xray ? '#0b0d10' : '#c3c9cf'
   return (
     <>
+      <color attach="background" args={[bg]} />
+      <fog attach="fog" args={[bg, xray ? 60 : 45, xray ? 140 : 120]} />
       <Environment />
-      <hemisphereLight args={['#dbe4ff', '#1f2937', 0.9]} />
+      <hemisphereLight args={xray ? ['#dbe4ff', '#1f2937', 0.9] : ['#eef3f8', '#6b6a66', 0.8]} />
       <directionalLight
         position={[14, d.shaftTop + 14, 18]}
-        intensity={2.2}
+        intensity={xray ? 2.2 : 2.8}
+        color={xray ? '#ffffff' : '#fff3e2'}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-14}
@@ -61,11 +64,12 @@ function SceneContents({ variant }: { variant: 'simulation' | 'architecture' }) 
         shadow-camera-bottom={-6}
         shadow-camera-far={120}
         shadow-bias={-0.0004}
+        shadow-normalBias={0.02}
       />
-      <gridHelper args={[60, 60, '#1f2630', '#161b22']} position={[0, -0.2, 0]} />
+      {xray && <gridHelper args={[60, 60, '#1f2630', '#161b22']} position={[0, -0.2, 0]} />}
       <Building d={d} xray={xray} clip={clip} display={display} />
       <Machinery d={d} xray={xray} />
-      <Car d={d} display={display} />
+      <Car d={d} display={display} xray={xray} />
       {xray && <Flows d={d} />}
       <CameraRig d={d} variant={variant} />
     </>
@@ -130,8 +134,12 @@ function shotFor(preset: CameraPreset, d: Dims, carY: number): Shot {
   switch (preset) {
     case 'building':
       return { pos: [26, mid + 10, 42], target: [0, mid - 1.5, 0], follow: false }
-    case 'interior':
-      return { pos: [-0.6, carY + 1.7, d.car.z - 0.55], target: [0.55, carY + 1.4, d.car.z + 0.75], follow: true }
+    case 'interior': {
+      // A passenger standing near the back wall, eyes at 1.62 m, looking at the doors.
+      const eye = new THREE.Vector3(-0.12, carY + 1.62, d.car.z - d.car.d / 2 + 0.2)
+      const look = new THREE.Vector3(0.12, carY + 1.15, d.car.z + d.car.d / 2).sub(eye).normalize().multiplyScalar(0.05).add(eye)
+      return { pos: eye.toArray(), target: look.toArray(), follow: true }
+    }
     case 'shaft':
       return { pos: [3.2, carY + 3.4, 4.2], target: [0, carY + 1.2, -0.2], follow: true }
     case 'machine':
@@ -141,8 +149,28 @@ function shotFor(preset: CameraPreset, d: Dims, carY: number): Shot {
   }
 }
 
+const { ACTION } = CameraControlsImpl
+/** First person: drag turns your head, scroll zooms the eye (FOV), no walking through walls. */
+function setFirstPerson(c: CameraControls, cam: THREE.PerspectiveCamera, on: boolean) {
+  c.minDistance = on ? 0 : 0.3
+  c.azimuthRotateSpeed = c.polarRotateSpeed = on ? -0.32 : 1
+  c.minPolarAngle = on ? Math.PI * 0.22 : 0
+  c.maxPolarAngle = on ? Math.PI * 0.8 : Math.PI
+  c.mouseButtons.wheel = on ? ACTION.ZOOM : ACTION.DOLLY
+  c.mouseButtons.right = on ? ACTION.NONE : ACTION.TRUCK
+  c.mouseButtons.middle = on ? ACTION.NONE : ACTION.DOLLY
+  c.touches.two = on ? ACTION.TOUCH_ZOOM : ACTION.TOUCH_DOLLY_TRUCK
+  c.touches.three = on ? ACTION.NONE : ACTION.TOUCH_TRUCK
+  c.minZoom = on ? 1 : 0.01
+  c.maxZoom = on ? 2.5 : Infinity
+  c.zoomTo(1, false)
+  cam.fov = on ? 74 : 38
+  cam.updateProjectionMatrix()
+}
+
 function CameraRig({ d, variant }: { d: Dims; variant: 'simulation' | 'architecture' }) {
   const controls = useRef<CameraControls>(null!)
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
   const preset = useLab((s) => s.camera)
   const nonce = useLab((s) => s.cameraNonce)
   const follow = useRef(false)
@@ -169,15 +197,17 @@ function CameraRig({ d, variant }: { d: Dims; variant: 'simulation' | 'architect
       pending.current = null
       follow.current = shot.follow
       lastY.current = y
-      controls.current.setLookAt(...shot.pos, ...shot.target, smooth)
+      const fp = preset === 'interior'
+      setFirstPerson(controls.current, camera, fp)
+      controls.current.setLookAt(...shot.pos, ...shot.target, smooth && !fp)
       return
     }
     const dy = y - lastY.current
     lastY.current = y
     if (!follow.current || dy === 0 || !controls.current) return
-    const p = controls.current.getPosition(new THREE.Vector3())
-    const t = controls.current.getTarget(new THREE.Vector3())
-    controls.current.setLookAt(p.x, p.y + dy, p.z, t.x, t.y + dy, t.z, false)
+    // Shift the rig without resetting the look direction, so you can look around while riding.
+    const t = controls.current.getTarget(new THREE.Vector3(), true)
+    controls.current.moveTo(t.x, t.y + dy, t.z, false)
   })
 
   return <CameraControls ref={controls} makeDefault minDistance={0.3} maxDistance={90} smoothTime={0.6} />

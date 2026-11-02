@@ -5,7 +5,7 @@ import type { ElevatorController } from '../../engine/ElevatorController'
 import { runtime } from '../../store/runtime'
 import { cwTop, type Dims } from './dims'
 
-export const FLOW_COLORS = { power: '#f59e0b', signal: '#34d399', command: '#3ad1e8', motion: '#e5e7eb' }
+export const FLOW_COLORS = { power: '#f59e0b', signal: '#34d399', command: '#4c9aff', motion: '#e5e7eb' }
 
 type V = [number, number, number]
 

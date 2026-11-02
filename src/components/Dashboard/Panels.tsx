@@ -228,7 +228,7 @@ export function MetricsPanel() {
                 <div className="h-3.5 flex-1 rounded-[3px] bg-surface-2">
                   <div
                     className="h-full rounded-[3px]"
-                    style={{ width: `${(n / maxCalls) * 100}%`, background: `rgba(58, 209, 232, ${0.25 + 0.75 * (n / maxCalls)})` }}
+                    style={{ width: `${(n / maxCalls) * 100}%`, background: `rgba(76, 154, 255, ${0.25 + 0.75 * (n / maxCalls)})` }}
                   />
                 </div>
                 <span className="w-6 font-mono text-[10.5px] text-ink-2">{n}</span>

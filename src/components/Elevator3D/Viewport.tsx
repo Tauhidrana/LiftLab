@@ -28,19 +28,19 @@ export function Viewport({ variant = 'simulation' }: { variant?: 'simulation' | 
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
         <HallLantern />
         <div className="flex flex-col items-end gap-2">
-        <div className="pointer-events-auto flex flex-wrap justify-end gap-0.5 rounded-lg border border-line bg-surface/85 p-0.5 backdrop-blur-sm">
+        <div className="pointer-events-auto flex flex-wrap justify-end gap-0.5 rounded-xl border border-line-strong bg-surface/90 p-1 shadow-lg shadow-black/30 backdrop-blur-md">
           {PRESETS.map((p) => (
             <button
               key={p.id}
               onClick={() => setCamera(p.id)}
               title={p.label}
               className={clsx(
-                'flex h-6 items-center gap-1.5 rounded px-2 text-[11.5px] transition-colors',
-                camera === p.id ? 'bg-surface-3 text-ink' : 'text-muted hover:text-ink-2',
+                'flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium transition-colors',
+                camera === p.id ? 'bg-accent text-white shadow-sm' : 'text-muted hover:bg-surface-3 hover:text-ink',
               )}
             >
               {p.icon}
-              <span className="hidden xl:inline">{p.label}</span>
+              <span className="hidden lg:inline">{p.label}</span>
             </button>
           ))}
         </div>
@@ -50,7 +50,9 @@ export function Viewport({ variant = 'simulation' }: { variant?: 'simulation' | 
       {variant === 'simulation' && <FirstRunHint />}
       {xray && <FlowLegend />}
       {variant === 'simulation' && engineering && <ComponentToast />}
-      <div className="pointer-events-none absolute right-2.5 bottom-2 font-mono text-[10px] text-faint">Drag to orbit, scroll to zoom, right-drag to pan</div>
+      <div className="pointer-events-none absolute right-3 bottom-2.5 rounded-md bg-black/45 px-2 py-1 text-[11px] text-white/80 backdrop-blur-sm">
+        {camera === 'interior' ? 'Drag to look around · Scroll to zoom · Click the panel to choose a floor' : 'Drag to orbit · Scroll to zoom · Right-drag to pan'}
+      </div>
     </div>
   )
 }

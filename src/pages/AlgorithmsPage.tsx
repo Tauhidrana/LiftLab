@@ -136,7 +136,7 @@ export function AlgorithmsPage() {
                           <div className="h-3 flex-1">
                             <div
                               className={clsx('h-full rounded-r-[4px] transition-all group-hover:opacity-100', v === best ? 'opacity-100' : 'opacity-55')}
-                              style={{ width: `${Math.max(2, (v / max) * 100)}%`, background: '#3ad1e8' }}
+                              style={{ width: `${Math.max(2, (v / max) * 100)}%`, background: '#4c9aff' }}
                             />
                           </div>
                           <span className={clsx('w-12 text-right font-mono text-[10.5px]', v === best ? 'text-ink' : 'text-muted')}>{fmt(v, m.digits)}</span>

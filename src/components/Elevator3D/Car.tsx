@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { runtime } from '../../store/runtime'
 import { useLab } from '../../store/useLab'
 import type { Dims } from './dims'
-import { font, HLMaterial, makeCanvasTexture, Pickable } from './parts'
+import { font, HLMaterial, makeCanvasTexture, Pickable, surfaceTexture } from './parts'
 
 const STEEL = '#b9c1ca'
 const FRAME = '#3d4450'
@@ -26,17 +26,20 @@ function panelLayout(floors: number) {
   return { buttons, height: yDoors + 124 }
 }
 
-export function Car({ d, display }: { d: Dims; display: THREE.Texture }) {
+export function Car({ d, display, xray }: { d: Dims; display: THREE.Texture; xray: boolean }) {
   const group = useRef<THREE.Group>(null!)
   const doorL = useRef<THREE.Mesh>(null!)
   const doorR = useRef<THREE.Mesh>(null!)
   const light = useRef<THREE.PointLight>(null!)
-  const ceiling = useRef<THREE.MeshStandardMaterial>(null!)
+  const ceiling = useRef(new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#fff6e8', emissiveIntensity: 2.5, side: THREE.DoubleSide }))
   const beams = useRef<THREE.Group>(null!)
   const obstacle = useRef<THREE.Mesh>(null!)
   const band = useRef<THREE.MeshBasicMaterial>(null!)
   const { w, d: depth, h } = d.car
   const half = d.door.open / 2
+  const brushed = useMemo(() => surfaceTexture('brushed', 2, 1), [])
+  const floorTex = useMemo(() => surfaceTexture('granite', 1.3, 1.15), [])
+  const ceilTex = useMemo(() => surfaceTexture('ceiling'), [])
 
   useFrame(() => {
     const c = runtime.controller
@@ -46,13 +49,13 @@ export function Car({ d, display }: { d: Dims; display: THREE.Texture }) {
     doorR.current.position.x = half / 2 + p * half * 0.98
 
     const powerLost = c.safety.has('powerLoss')
-    light.current.intensity = powerLost ? 0.6 : 4
+    light.current.intensity = powerLost ? 1 : 6
     light.current.color.set(powerLost ? '#ff6b4a' : '#fff4e6')
-    ceiling.current.emissiveIntensity = powerLost ? 0.15 : 1.2
+    ceiling.current.emissiveIntensity = powerLost ? 0.3 : 2.5
     ceiling.current.emissive.set(powerLost ? '#ff4a2a' : '#fff6e8')
 
-    // Light-curtain beams are visible while the doors are not fully closed.
-    beams.current.visible = p > 0.01
+    // Infrared beams are invisible in real life: only drawn in the x-ray / engineering lens.
+    beams.current.visible = xray && p > 0.01
     const lc = c.doors.lightCurtain
     const color = !lc.healthy ? (Math.floor(performance.now() / 400) % 2 ? '#6b7280' : '#374151') : lc.blocked ? '#f43f5e' : '#fb7185'
     beams.current.children.forEach((m) => ((m as THREE.Mesh).material as THREE.MeshBasicMaterial).color.set(color))
@@ -60,7 +63,7 @@ export function Car({ d, display }: { d: Dims; display: THREE.Texture }) {
     obstacle.current.visible = c.safety.has('doorObstruction') && p > 0.05
     // Status band: cyan moving, green doors, red emergency, dim idle — makes the car easy to spot.
     const st = c.sm.state
-    band.current.color.set(st === 'EMERGENCY' ? '#f43f5e' : st.startsWith('MOVING') ? '#3ad1e8' : st.startsWith('DOOR') ? '#34d399' : '#475569')
+    band.current.color.set(st === 'EMERGENCY' ? '#f43f5e' : st.startsWith('MOVING') ? '#4c9aff' : st.startsWith('DOOR') ? '#34d399' : '#475569')
   })
 
   return (
@@ -68,44 +71,93 @@ export function Car({ d, display }: { d: Dims; display: THREE.Texture }) {
       <group position={[0, 0, d.car.z]}>
         <Pickable id="car">
           {/* Cabin shell: thin panels so the interior is visible from inside */}
+          {/* Floor: polished granite tile */}
           <mesh position={[0, -0.04, 0]} receiveShadow castShadow>
             <boxGeometry args={[w, 0.08, depth]} />
-            <HLMaterial id="car" color="#2f343b" metalness={0.3} roughness={0.7} />
+            <HLMaterial id="car" color="#ffffff" map={floorTex} metalness={0.05} roughness={0.28} />
+          </mesh>
+          {/* Aluminium door sill */}
+          <mesh position={[0, 0.004, depth / 2 + 0.02]} receiveShadow>
+            <boxGeometry args={[d.door.open + 0.1, 0.012, 0.1]} />
+            <meshStandardMaterial color="#c8ccd0" metalness={0.9} roughness={0.45} />
           </mesh>
           <mesh position={[0, h + 0.03, 0]} castShadow>
             <boxGeometry args={[w, 0.06, depth]} />
             <HLMaterial id="car" color={STEEL} metalness={0.8} roughness={0.35} />
           </mesh>
-          <mesh position={[0, h - 0.005, 0]} rotation-x={Math.PI / 2}>
-            <planeGeometry args={[w * 0.6, depth * 0.5]} />
-            <meshStandardMaterial ref={ceiling} color="#ffffff" emissive="#fff6e8" emissiveIntensity={1.2} side={THREE.DoubleSide} />
+          {/* Suspended ceiling with recessed downlights */}
+          <mesh position={[0, h - 0.002, 0]} rotation-x={Math.PI / 2}>
+            <planeGeometry args={[w - 0.02, depth - 0.02]} />
+            <meshStandardMaterial color="#ffffff" map={ceilTex} roughness={0.9} side={THREE.DoubleSide} />
           </mesh>
-          <mesh position={[0, h / 2, -depth / 2]} castShadow>
+          {[-0.4, 0.4].flatMap((x) =>
+            [-0.32, 0.32].map((z) => (
+              <mesh key={`${x}${z}`} position={[x, h - 0.006, z]} rotation-x={Math.PI / 2} material={ceiling.current}>
+                <circleGeometry args={[0.07, 32]} />
+              </mesh>
+            )),
+          )}
+          {/* Back wall: brushed steel with a champagne feature panel */}
+          <mesh position={[0, h / 2, -depth / 2]} castShadow receiveShadow>
             <boxGeometry args={[w, h, 0.04]} />
-            <HLMaterial id="car" color={STEEL} metalness={0.8} roughness={0.32} />
+            <HLMaterial id="car" color="#bcc1c6" map={brushed} metalness={0.9} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 1.4, -depth / 2 + 0.024]}>
+            <boxGeometry args={[w * 0.56, 1.6, 0.008]} />
+            <meshStandardMaterial color="#c9b79a" map={brushed} metalness={0.9} roughness={0.22} />
           </mesh>
           {[-1, 1].map((s) => (
-            <mesh key={s} position={[(s * w) / 2, h / 2, 0]} castShadow>
-              <boxGeometry args={[0.04, h, depth]} />
-              <HLMaterial id="car" color={STEEL} metalness={0.8} roughness={0.32} />
-            </mesh>
+            <group key={s}>
+              <mesh position={[(s * w) / 2, h / 2, 0]} castShadow receiveShadow>
+                <boxGeometry args={[0.04, h, depth]} />
+                <HLMaterial id="car" color="#bcc1c6" map={brushed} metalness={0.9} roughness={0.3} />
+              </mesh>
+              {/* panel joints */}
+              {[-depth / 6, depth / 6].map((z) => (
+                <mesh key={z} position={[s * (w / 2 - 0.021), h / 2, z]}>
+                  <boxGeometry args={[0.002, h, 0.006]} />
+                  <meshStandardMaterial color="#2b2f34" roughness={0.6} />
+                </mesh>
+              ))}
+              {/* kick plate */}
+              <mesh position={[s * (w / 2 - 0.022), 0.06, 0]}>
+                <boxGeometry args={[0.004, 0.12, depth - 0.02]} />
+                <meshStandardMaterial color="#3a3e44" metalness={0.8} roughness={0.5} />
+              </mesh>
+            </group>
           ))}
+          <mesh position={[0, 0.06, -depth / 2 + 0.022]}>
+            <boxGeometry args={[w - 0.02, 0.12, 0.004]} />
+            <meshStandardMaterial color="#3a3e44" metalness={0.8} roughness={0.5} />
+          </mesh>
           {/* Front wall around the door opening */}
           {[-1, 1].map((s) => (
             <mesh key={s} position={[s * (half + (w / 2 - half) / 2), h / 2, depth / 2]} castShadow>
               <boxGeometry args={[w / 2 - half, h, 0.04]} />
-              <HLMaterial id="car" color={STEEL} metalness={0.8} roughness={0.32} />
+              <HLMaterial id="car" color="#bcc1c6" map={brushed} metalness={0.9} roughness={0.3} />
             </mesh>
           ))}
           <mesh position={[0, (h + 2.2) / 2, depth / 2]}>
             <boxGeometry args={[d.door.open, h - 2.2, 0.04]} />
-            <HLMaterial id="car" color={STEEL} metalness={0.8} roughness={0.32} />
+            <HLMaterial id="car" color="#bcc1c6" map={brushed} metalness={0.9} roughness={0.3} />
           </mesh>
-          {/* Handrail */}
-          <mesh position={[0, 0.95, -depth / 2 + 0.06]} rotation-z={Math.PI / 2}>
-            <cylinderGeometry args={[0.018, 0.018, w * 0.8]} />
-            <meshStandardMaterial color="#d1d5db" metalness={1} roughness={0.2} />
+          {/* Handrails (back and sides) with wall brackets */}
+          <mesh position={[0, 0.92, -depth / 2 + 0.07]} rotation-z={Math.PI / 2}>
+            <cylinderGeometry args={[0.019, 0.019, w * 0.78, 20]} />
+            <meshStandardMaterial color="#e5e7eb" metalness={1} roughness={0.15} />
           </mesh>
+          {[-1, 1].map((s) => (
+            <group key={s}>
+              <mesh position={[s * (w / 2 - 0.07), 0.92, -depth / 6]} rotation-x={Math.PI / 2}>
+                <cylinderGeometry args={[0.019, 0.019, depth * 0.5, 20]} />
+                <meshStandardMaterial color="#e5e7eb" metalness={1} roughness={0.15} />
+              </mesh>
+              <mesh position={[s * w * 0.3, 0.92, -depth / 2 + 0.04]} rotation-x={Math.PI / 2}>
+                <cylinderGeometry args={[0.008, 0.008, 0.06, 10]} />
+                <meshStandardMaterial color="#d1d5db" metalness={1} roughness={0.2} />
+              </mesh>
+            </group>
+          ))}
 
           {/* Sling (car frame) */}
           <mesh position={[0, d.car.slingTop, 0]} castShadow>
@@ -145,11 +197,11 @@ export function Car({ d, display }: { d: Dims; display: THREE.Texture }) {
         <group position={[0, 1.1, depth / 2 + 0.03]}>
           <mesh ref={doorL} castShadow>
             <boxGeometry args={[half, 2.2, 0.03]} />
-            <HLMaterial id="doorMotor" color="#c9d0d8" metalness={0.85} roughness={0.25} />
+            <HLMaterial id="doorMotor" color="#bcc1c6" map={brushed} metalness={0.9} roughness={0.28} />
           </mesh>
           <mesh ref={doorR} castShadow>
             <boxGeometry args={[half, 2.2, 0.03]} />
-            <HLMaterial id="doorMotor" color="#c9d0d8" metalness={0.85} roughness={0.25} />
+            <HLMaterial id="doorMotor" color="#bcc1c6" map={brushed} metalness={0.9} roughness={0.28} />
           </mesh>
         </group>
 
@@ -205,7 +257,7 @@ export function Car({ d, display }: { d: Dims; display: THREE.Texture }) {
           <meshBasicMaterial map={display} toneMapped={false} />
         </mesh>
 
-        <pointLight ref={light} position={[0, h - 0.25, 0]} intensity={4} distance={4} decay={1.6} color="#fff4e6" />
+        <pointLight ref={light} position={[0, h - 0.2, 0]} intensity={4} distance={5} decay={2} color="#fff4e6" />
       </group>
     </group>
   )
@@ -214,7 +266,7 @@ export function Car({ d, display }: { d: Dims; display: THREE.Texture }) {
 /** The car operating panel: floor buttons, door open/close and emergency stop — all clickable. */
 function CarPanel({ d }: { d: Dims }) {
   const layout = useMemo(() => panelLayout(d.floors), [d.floors])
-  const t = useMemo(() => makeCanvasTexture(PANEL_W, layout.height), [layout.height])
+  const t = useMemo(() => makeCanvasTexture(PANEL_W * 2, layout.height * 2), [layout.height])
   const key = useRef('')
   const lab = useLab.getState
 
@@ -226,12 +278,18 @@ function CarPanel({ d }: { d: Dims }) {
     if (k === key.current) return
     key.current = k
     const { ctx } = t
-    ctx.fillStyle = '#16191e'
+    ctx.setTransform(2, 0, 0, 2, 0, 0)
+    // brushed faceplate
+    const g = ctx.createLinearGradient(0, 0, PANEL_W, 0)
+    g.addColorStop(0, '#9aa1a9')
+    g.addColorStop(0.5, '#c3c8ce')
+    g.addColorStop(1, '#8f969e')
+    ctx.fillStyle = g
     ctx.fillRect(0, 0, PANEL_W, layout.height)
-    ctx.strokeStyle = '#3b424d'
+    ctx.strokeStyle = '#6b727b'
     ctx.lineWidth = 4
     ctx.strokeRect(2, 2, PANEL_W - 4, layout.height - 4)
-    ctx.fillStyle = '#6b7280'
+    ctx.fillStyle = '#3a3f46'
     ctx.font = font(14)
     ctx.textAlign = 'center'
     ctx.fillText('LIFTLAB · 630 kg · 8 P', PANEL_W / 2, 26)
@@ -240,12 +298,12 @@ function CarPanel({ d }: { d: Dims }) {
       const on = b.kind === 'floor' ? lit.has(b.floor!) : b.kind === 'stop' ? estop : false
       ctx.beginPath()
       ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)
-      ctx.fillStyle = b.kind === 'stop' ? (on ? '#ef4444' : '#7f1d1d') : on ? '#0e7490' : '#2a2f37'
+      ctx.fillStyle = b.kind === 'stop' ? (on ? '#ef4444' : '#a3161c') : '#d9dde1'
       ctx.fill()
-      ctx.strokeStyle = on ? (b.kind === 'stop' ? '#fecaca' : '#67e8f9') : '#5b6472'
-      ctx.lineWidth = 3
+      ctx.strokeStyle = on ? (b.kind === 'stop' ? '#fecaca' : '#60a5fa') : '#80878f'
+      ctx.lineWidth = on ? 5 : 3
       ctx.stroke()
-      ctx.fillStyle = on ? '#ffffff' : '#c3cad3'
+      ctx.fillStyle = b.kind === 'stop' ? '#ffffff' : on ? '#2563eb' : '#2b3036'
       ctx.font = font(b.kind === 'floor' ? 22 : 15, 600)
       const label = b.kind === 'floor' ? String(b.floor) : b.kind === 'open' ? '◀|▶' : b.kind === 'close' ? '▶|◀' : 'STOP'
       ctx.fillText(label, b.x, b.y + 1)

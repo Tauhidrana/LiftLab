@@ -11,7 +11,7 @@ export function LiveLineChart({
   pick,
   min,
   max,
-  color = '#3ad1e8',
+  color = '#4c9aff',
   height = 92,
 }: {
   title: string

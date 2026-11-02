@@ -271,9 +271,9 @@ function SignalFlow({ s, selected, onSelect }: { s: Snapshot; selected: Componen
               height={24}
               rx={5}
               fill={selected === id ? 'rgba(58,209,232,0.14)' : '#161a1f'}
-              stroke={selected === id ? '#3ad1e8' : '#2f353e'}
+              stroke={selected === id ? '#4c9aff' : '#2f353e'}
             />
-            <text x={x} y={y + 4} textAnchor="middle" fontSize="10.5" fill={selected === id ? '#3ad1e8' : '#aab1bb'} fontFamily="Inter, sans-serif">
+            <text x={x} y={y + 4} textAnchor="middle" fontSize="10.5" fill={selected === id ? '#4c9aff' : '#aab1bb'} fontFamily="Inter, sans-serif">
               {label}
             </text>
           </g>
