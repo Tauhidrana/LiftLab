@@ -7,9 +7,32 @@ import { runtime } from './runtime'
 export type Page = 'simulation' | 'architecture' | 'group' | 'algorithms' | 'challenges' | 'learning' | 'settings'
 export type CameraPreset = 'building' | 'interior' | 'shaft' | 'machine' | 'cutaway'
 export type BottomTab = 'timeline' | 'queue' | 'motion' | 'metrics' | 'faults'
+export type Lang = 'en' | 'bn'
+export type CodeLang = 'python' | 'typescript'
+
+// Per-viewer preferences; storage can be unavailable (private mode), so never let it throw.
+const pref = <T extends string>(key: string, fallback: T, allowed: T[]): T => {
+  try {
+    const v = localStorage.getItem(key) as T | null
+    return v && allowed.includes(v) ? v : fallback
+  } catch {
+    return fallback
+  }
+}
+const savePref = (key: string, v: string) => {
+  try {
+    localStorage.setItem(key, v)
+  } catch {
+    /* ignore */
+  }
+}
 
 interface LabState {
   page: Page
+  lang: Lang
+  codeLang: CodeLang
+  setLang(l: Lang): void
+  setCodeLang(l: CodeLang): void
   operation: OperationMode
   /** Lenses can be combined with any operation mode. */
   debug: boolean
@@ -70,6 +93,17 @@ const c = () => runtime.controller
 
 export const useLab = create<LabState>((set, get) => ({
   page: 'simulation',
+  lang: pref<Lang>('liftlab.lang', 'en', ['en', 'bn']),
+  codeLang: pref<CodeLang>('liftlab.codeLang', 'python', ['python', 'typescript']),
+  setLang: (lang) => {
+    savePref('liftlab.lang', lang)
+    document.documentElement.lang = lang
+    set({ lang })
+  },
+  setCodeLang: (codeLang) => {
+    savePref('liftlab.codeLang', codeLang)
+    set({ codeLang })
+  },
   operation: runtime.config.mode,
   debug: false,
   engineering: false,

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useShallow } from 'zustand/react/shallow'
-import { StatePill } from './components/ui'
+import { Segmented, StatePill } from './components/ui'
 import { AlgorithmsPage } from './pages/AlgorithmsPage'
 import { ChallengesPage } from './pages/ChallengesPage'
 import { GroupPage } from './pages/GroupPage'
@@ -11,6 +11,7 @@ import { SimulationPage } from './pages/SimulationPage'
 import { useLab, type Page } from './store/useLab'
 import { MobileSimulation } from './pages/MobileSimulation'
 import { useNarrow } from './utils/useNarrow'
+import { useT } from './i18n'
 
 const NAV: { id: Page; label: string }[] = [
   { id: 'simulation', label: 'Simulation' },
@@ -23,6 +24,7 @@ const NAV: { id: Page; label: string }[] = [
 ]
 
 function Logo() {
+  const t = useT()
   return (
     <div className="flex items-center gap-2">
       <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
@@ -32,7 +34,7 @@ function Logo() {
       </svg>
       <div className="flex flex-col leading-none">
         <span className="text-[14px] font-semibold tracking-tight text-ink">LiftLab</span>
-        <span className="mt-0.5 hidden text-[10.5px] text-faint md:inline">Elevator engineering lab</span>
+        <span className="mt-0.5 hidden text-[10.5px] text-faint md:inline">{t('Elevator engineering lab')}</span>
       </div>
     </div>
   )
@@ -43,6 +45,9 @@ export default function App() {
   const setPage = useLab((s) => s.setPage)
   const narrow = useNarrow()
   const s = useLab(useShallow((st) => ({ state: st.snapshot.state, op: st.operation, alg: st.config.algorithm, floors: st.config.floors })))
+  const lang = useLab((st) => st.lang)
+  const setLang = useLab((st) => st.setLang)
+  const t = useT()
   return (
     <div className="flex h-full flex-col">
       <header className="flex h-13 shrink-0 items-center gap-4 overflow-x-auto border-b border-line bg-surface px-4 [scrollbar-width:none] md:gap-8">
@@ -57,15 +62,26 @@ export default function App() {
                 page === n.id ? 'bg-surface-3 text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]' : 'text-muted hover:text-ink',
               )}
             >
-              {n.label}
+              {t(n.label)}
             </button>
           ))}
         </nav>
-        <div className="ml-auto hidden items-center gap-3 text-[12px] text-muted sm:flex">
-          <span className="hidden lg:inline">
-            {s.floors} floors · {s.alg} · {s.op}
+        <div className="ml-auto flex shrink-0 items-center gap-3 text-[12px] text-muted">
+          <span className="hidden xl:inline">
+            {t('{n} floors', { n: s.floors })} · {s.alg} · {t(s.op)}
           </span>
-          <StatePill state={s.state} />
+          <span className="hidden sm:inline">
+            <StatePill state={s.state} />
+          </span>
+          <Segmented
+            size="sm"
+            value={lang}
+            onChange={setLang}
+            options={[
+              { value: 'en', label: 'EN', title: 'English' },
+              { value: 'bn', label: 'বাংলা', title: 'বাংলা' },
+            ]}
+          />
         </div>
       </header>
       <main className="min-h-0 flex-1">

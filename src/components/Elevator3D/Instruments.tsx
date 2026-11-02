@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useLab } from '../../store/useLab'
 import { fmt } from '../../utils/format'
 import { StatePill } from '../ui'
+import { toBnDigits, useMsg, useT } from '../../i18n'
 
 /**
  * The hall lantern: the amber dot-matrix floor display found above every lift door.
@@ -23,6 +24,8 @@ export function HallLantern({ size = 'lg' }: { size?: 'lg' | 'sm' }) {
   )
   const em = s.state === 'EMERGENCY'
   const big = size === 'lg'
+  const t = useT()
+  const msg = useMsg()
   return (
     <div className="pointer-events-auto flex items-stretch overflow-hidden rounded-lg border border-line-strong bg-surface/90 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.8)] backdrop-blur-sm">
       <div
@@ -41,9 +44,9 @@ export function HallLantern({ size = 'lg' }: { size?: 'lg' | 'sm' }) {
         <div className="flex min-w-[190px] flex-col justify-center gap-1 px-3 py-2">
           <StatePill state={s.state} />
           <div className="font-mono text-[11px] text-muted">
-            {fmt(Math.abs(s.v))} m/s{s.target ? `, heading to ${s.target}` : ''}
+            {fmt(Math.abs(s.v))} m/s{s.target ? `, ${t('heading to {f}', { f: s.target })}` : ''}
           </div>
-          <div className="text-[11.5px] text-ink-2">{em ? <span className="text-danger">{s.emergency?.reason}</span> : doorText(s.door)}</div>
+          <div className="text-[11.5px] text-ink-2">{em ? <span className="text-danger">{msg(s.emergency?.reason)}</span> : t(doorText(s.door))}</div>
         </div>
       )}
     </div>
@@ -87,6 +90,8 @@ export function ShaftRail() {
     })),
   )
   const pressCar = useLab((st) => st.pressCar)
+  const t = useT()
+  const lang = useLab((st) => st.lang)
   const car = s.car.split(',').filter(Boolean).map(Number)
   const hall = s.hall.split(',').filter(Boolean)
   const order = Array.from({ length: s.floors }, (_, i) => s.floors - i)
@@ -94,7 +99,7 @@ export function ShaftRail() {
   const carTop = ((s.floors - 1) * s.H - s.pos) / s.H // in rows from the top
 
   return (
-    <div className="pointer-events-auto rounded-lg border border-line bg-surface/85 p-1.5 backdrop-blur-sm" aria-label="Shaft overview">
+    <div className="pointer-events-auto rounded-lg border border-line bg-surface/85 p-1.5 backdrop-blur-sm" aria-label={t('Shaft overview')}>
       <div className="relative">
         {/* the car */}
         <div
@@ -112,13 +117,13 @@ export function ShaftRail() {
             <button
               key={f}
               onClick={() => pressCar(f)}
-              title={`Send the car to floor ${f}`}
+              title={t('Send the car to floor {f}', { f })}
               className="group relative flex w-[78px] items-center gap-1 rounded px-1 hover:bg-surface-3"
               style={{ height: rowH }}
             >
-              <span className={clsx('w-4 text-right font-mono text-[11px]', s.target === f ? 'text-accent' : 'text-muted group-hover:text-ink')}>{f}</span>
+              <span className={clsx('w-4 text-right font-mono text-[11px]', s.target === f ? 'text-accent' : 'text-muted group-hover:text-ink')}>{lang === 'bn' ? toBnDigits(f) : f}</span>
               <span className="w-[22px]" />
-              <span className={clsx('h-1.5 w-1.5 rounded-full', car.includes(f) ? 'bg-accent' : 'bg-transparent')} title={car.includes(f) ? 'Car call' : undefined} />
+              <span className={clsx('h-1.5 w-1.5 rounded-full', car.includes(f) ? 'bg-accent' : 'bg-transparent')} title={car.includes(f) ? t('Car call') : undefined} />
               <span className="flex flex-col text-[8px] leading-[8px]">
                 <span className={up ? 'text-lamp' : 'text-transparent'}>▲</span>
                 <span className={down ? 'text-lamp' : 'text-transparent'}>▼</span>
@@ -134,11 +139,12 @@ export function ShaftRail() {
 /** Shown until the first button press, so an empty lab tells you what to do. */
 export function FirstRunHint() {
   const pressed = useLab((st) => st.events.some((e) => e.category === 'input'))
+  const t = useT()
   if (pressed) return null
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-14 flex justify-center">
       <div className="rounded-full border border-accent/40 bg-surface/90 px-4 py-1.5 text-[13px] text-ink backdrop-blur-sm">
-        Press a floor button to send the car, then watch the code run on the right
+        {t('Press a floor button to send the car, then watch the code run on the right')}
       </div>
     </div>
   )

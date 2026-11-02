@@ -97,7 +97,7 @@ export function makeCanvasTexture(w: number, h: number) {
 
 export const font = (size: number, weight = 500) => `${weight} ${size}px "IBM Plex Mono", ui-monospace, monospace`
 
-type TexKind = 'brushed' | 'concrete' | 'granite' | 'ceiling'
+type TexKind = 'brushed' | 'concrete' | 'granite' | 'ceiling' | 'marble' | 'wood'
 const texCache = new Map<string, THREE.Texture>()
 
 /** Procedural surface textures (brushed steel, concrete, granite tile), cached per kind + repeat. */
@@ -116,7 +116,7 @@ export function surfaceTexture(kind: TexKind, rx = 1, ry = 1) {
 }
 
 function drawSurface(kind: TexKind) {
-  const n = kind === 'granite' || kind === 'brushed' ? 512 : 256
+  const n = kind === 'ceiling' || kind === 'concrete' ? 256 : 512
   const { ctx, texture } = makeCanvasTexture(n, n)
   const gray = (v: number, a: number) => `rgba(${v},${v},${v},${a})`
   if (kind === 'brushed') {
@@ -139,6 +139,33 @@ function drawSurface(kind: TexKind) {
     for (let i = 0; i < 6000; i++) {
       ctx.fillStyle = gray(Math.random() < 0.5 ? 255 : 40, 0.08 + Math.random() * 0.12)
       ctx.fillRect(Math.random() * n, Math.random() * n, 1, 1)
+    }
+  } else if (kind === 'marble') {
+    // light stone tiles with soft veins
+    ctx.fillStyle = '#e9e6df'
+    ctx.fillRect(0, 0, n, n)
+    for (let i = 0; i < 26; i++) {
+      ctx.strokeStyle = `rgba(120,115,108,${0.05 + Math.random() * 0.12})`
+      ctx.lineWidth = 0.6 + Math.random() * 1.8
+      ctx.beginPath()
+      let x = Math.random() * n
+      let y = Math.random() * n
+      ctx.moveTo(x, y)
+      for (let k = 0; k < 8; k++) ctx.lineTo((x += (Math.random() - 0.3) * 70), (y += (Math.random() - 0.5) * 60))
+      ctx.stroke()
+    }
+    ctx.strokeStyle = '#bdb8ae'
+    ctx.lineWidth = 2
+    for (const v of [0, n / 2, n]) {
+      ctx.beginPath(); ctx.moveTo(v, 0); ctx.lineTo(v, n); ctx.stroke()
+      ctx.beginPath(); ctx.moveTo(0, v); ctx.lineTo(n, v); ctx.stroke()
+    }
+  } else if (kind === 'wood') {
+    ctx.fillStyle = '#8a5a35'
+    ctx.fillRect(0, 0, n, n)
+    for (let i = 0; i < 900; i++) {
+      ctx.fillStyle = gray(Math.random() < 0.5 ? 30 : 200, 0.05 + Math.random() * 0.06)
+      ctx.fillRect(0, Math.random() * n, n, 1 + Math.random() * 2)
     }
   } else {
     ctx.fillStyle = '#3b3e43'

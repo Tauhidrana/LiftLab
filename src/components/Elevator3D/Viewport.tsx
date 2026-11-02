@@ -6,6 +6,7 @@ import { FLOW_COLORS } from './Flows'
 import { ElevatorScene } from './Scene'
 import { WebGLGuard } from './WebGLGuard'
 import { FirstRunHint, HallLantern, ShaftRail } from './Instruments'
+import { useT } from '../../i18n'
 
 const PRESETS: { id: CameraPreset; label: string; icon: React.ReactNode }[] = [
   { id: 'building', label: 'Building', icon: <Building2 size={13} /> },
@@ -20,6 +21,7 @@ export function Viewport({ variant = 'simulation' }: { variant?: 'simulation' | 
   const setCamera = useLab((s) => s.setCamera)
   const engineering = useLab((s) => s.engineering)
   const xray = variant === 'architecture' || engineering
+  const t = useT()
   return (
     <div className="relative h-full w-full overflow-hidden bg-bg">
       <WebGLGuard>
@@ -33,14 +35,14 @@ export function Viewport({ variant = 'simulation' }: { variant?: 'simulation' | 
             <button
               key={p.id}
               onClick={() => setCamera(p.id)}
-              title={p.label}
+              title={t(p.label)}
               className={clsx(
                 'flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium transition-colors',
                 camera === p.id ? 'bg-accent text-white shadow-sm' : 'text-muted hover:bg-surface-3 hover:text-ink',
               )}
             >
               {p.icon}
-              <span className="hidden lg:inline">{p.label}</span>
+              <span className="hidden lg:inline">{t(p.label)}</span>
             </button>
           ))}
         </div>
@@ -51,13 +53,14 @@ export function Viewport({ variant = 'simulation' }: { variant?: 'simulation' | 
       {xray && <FlowLegend />}
       {variant === 'simulation' && engineering && <ComponentToast />}
       <div className="pointer-events-none absolute right-3 bottom-2.5 rounded-md bg-black/45 px-2 py-1 text-[11px] text-white/80 backdrop-blur-sm">
-        {camera === 'interior' ? 'Drag to look around · Scroll to zoom · Click the panel to choose a floor' : 'Drag to orbit · Scroll to zoom · Right-drag to pan'}
+        {t(camera === 'interior' ? 'Drag to look around · Scroll to zoom · Click the panel to choose a floor' : 'Drag to orbit · Scroll to zoom · Right-drag to pan')}
       </div>
     </div>
   )
 }
 
 function FlowLegend() {
+  const t = useT()
   const items = [
     { c: FLOW_COLORS.power, l: 'Power (motor, brake coil)' },
     { c: FLOW_COLORS.signal, l: 'Sensor signal' },
@@ -69,7 +72,7 @@ function FlowLegend() {
       {items.map((i) => (
         <div key={i.l} className="flex items-center gap-2 text-[11px] text-ink-2">
           <span className="h-2 w-2 rounded-full" style={{ background: i.c }} />
-          {i.l}
+          {t(i.l)}
         </div>
       ))}
     </div>
@@ -82,24 +85,26 @@ function ComponentToast() {
   const live = useLab((s) => (id ? COMPONENT_BY_ID[id].live(s.snapshot) : ''))
   const close = useLab((s) => s.selectComponent)
   const setPage = useLab((s) => s.setPage)
+  const t = useT()
+  const lang = useLab((s) => s.lang)
   if (!id) {
     return (
-      <div className="pointer-events-none absolute right-2.5 bottom-7 text-[11px] text-muted">Click any machine part to identify it</div>
+      <div className="pointer-events-none absolute right-2.5 bottom-7 text-[11px] text-muted">{t('Click any machine part to identify it')}</div>
     )
   }
   const c = COMPONENT_BY_ID[id]
   return (
     <div className="absolute right-2.5 bottom-7 w-[300px] rounded-md border border-line-strong bg-surface/95 p-3 backdrop-blur-sm">
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[13px] font-semibold text-ink">{c.name}</div>
-        <button onClick={() => close(null)} className="text-muted hover:text-ink" aria-label="Close">
+        <div className="text-[13px] font-semibold text-ink">{lang === 'bn' ? c.bn.name : c.name}</div>
+        <button onClick={() => close(null)} className="text-muted hover:text-ink" aria-label={t('Close')}>
           ×
         </button>
       </div>
-      <p className="mt-1 text-[12px] leading-snug text-ink-2">{c.purpose}</p>
+      <p className="mt-1 text-[12px] leading-snug text-ink-2">{lang === 'bn' ? c.bn.purpose : c.purpose}</p>
       <div className="mt-1.5 font-mono text-[11px] text-accent">{live}</div>
       <button onClick={() => setPage('architecture')} className="mt-2 text-[11.5px] text-accent hover:underline">
-        Open in Architecture
+        {t('Open in Architecture')}
       </button>
     </div>
   )

@@ -1,3 +1,4 @@
+import { MeshReflectorMaterial } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -26,7 +27,7 @@ function panelLayout(floors: number) {
   return { buttons, height: yDoors + 124 }
 }
 
-export function Car({ d, display, xray }: { d: Dims; display: THREE.Texture; xray: boolean }) {
+export function Car({ d, display, xray, mirror }: { d: Dims; display: THREE.Texture; xray: boolean; mirror: boolean }) {
   const group = useRef<THREE.Group>(null!)
   const doorL = useRef<THREE.Mesh>(null!)
   const doorR = useRef<THREE.Mesh>(null!)
@@ -102,10 +103,25 @@ export function Car({ d, display, xray }: { d: Dims; display: THREE.Texture; xra
             <boxGeometry args={[w, h, 0.04]} />
             <HLMaterial id="car" color="#bcc1c6" map={brushed} metalness={0.9} roughness={0.3} />
           </mesh>
-          <mesh position={[0, 1.4, -depth / 2 + 0.024]}>
-            <boxGeometry args={[w * 0.56, 1.6, 0.008]} />
-            <meshStandardMaterial color="#c9b79a" map={brushed} metalness={0.9} roughness={0.22} />
-          </mesh>
+          {mirror ? (
+            // A real mirror (planar reflection) — only rendered in the first-person view, where you can see it.
+            <mesh position={[0, 1.45, -depth / 2 + 0.025]}>
+              <planeGeometry args={[w * 0.6, 1.3]} />
+              <MeshReflectorMaterial mirror={1} resolution={1024} blur={[0, 0]} mixBlur={0} mixStrength={1} color="#c6ccd2" metalness={0.4} roughness={0} />
+            </mesh>
+          ) : (
+            <mesh position={[0, 1.45, -depth / 2 + 0.024]}>
+              <boxGeometry args={[w * 0.6, 1.3, 0.008]} />
+              <meshStandardMaterial color="#9ea6ae" metalness={1} roughness={0.08} />
+            </mesh>
+          )}
+          {/* champagne frame around the mirror */}
+          {[-1, 1].map((s) => (
+            <mesh key={`mf${s}`} position={[0, 1.45 + s * 0.67, -depth / 2 + 0.03]}>
+              <boxGeometry args={[w * 0.6 + 0.08, 0.04, 0.012]} />
+              <meshStandardMaterial color="#c9b79a" metalness={0.95} roughness={0.25} />
+            </mesh>
+          ))}
           {[-1, 1].map((s) => (
             <group key={s}>
               <mesh position={[(s * w) / 2, h / 2, 0]} castShadow receiveShadow>

@@ -12,11 +12,13 @@ import { useLab } from '../store/useLab'
 import { fmt } from '../utils/format'
 import { Handle } from './SimulationPage'
 import { useNarrow } from '../utils/useNarrow'
+import { useT } from '../i18n'
 
 const GROUPS: MechComponent['group'][] = ['Drive', 'Car & shaft', 'Doors', 'Sensing & control', 'Safety']
 
 export function ArchitecturePage() {
   const narrow = useNarrow()
+  const t = useT()
   if (narrow) {
     return (
       <div className="flex h-full min-h-0 flex-col overflow-auto">
@@ -35,8 +37,8 @@ export function ArchitecturePage() {
       <div className="flex shrink-0 items-center gap-2 border-b border-line bg-warn/[0.06] px-4 py-1.5 text-[12px] text-ink-2">
         <ShieldAlert size={14} className="text-warn" />
         <span>
-          <b className="text-ink">Simplified educational model.</b> Real elevators follow safety codes (e.g. EN 81-20/50, ASME A17.1) with hard-wired safety
-          circuits, redundant brakes and certified components. This simulation is not a safety-certified controller.
+          <b className="text-ink">{t('Simplified educational model.')}</b>{' '}
+          {t('Real elevators follow safety codes (e.g. EN 81-20/50, ASME A17.1) with hard-wired safety circuits, redundant brakes and certified components. This simulation is not a safety-certified controller.')}
         </span>
       </div>
       <Group orientation="horizontal" className="min-h-0 flex-1">
@@ -60,13 +62,15 @@ function ComponentList() {
   const selected = useLab((s) => s.selectedComponent)
   const select = useLab((s) => s.selectComponent)
   const hover = useLab((s) => s.hoverComponent)
+  const t = useT()
+  const lang = useLab((s) => s.lang)
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface">
-      <PanelHeader title="Components" />
+      <PanelHeader title={t('Components')} />
       <div className="min-h-0 flex-1 overflow-auto px-2 py-2">
         {GROUPS.map((g) => (
           <div key={g} className="mb-3">
-            <div className="px-1.5 pb-1 text-[12px] font-medium text-faint">{g}</div>
+            <div className="px-1.5 pb-1 text-[12px] font-medium text-faint">{t(g)}</div>
             {COMPONENTS.filter((c) => c.group === g).map((c) => {
               const n = COMPONENTS.indexOf(c) + 1
               return (
@@ -81,7 +85,7 @@ function ComponentList() {
                   )}
                 >
                   <span className="w-5 font-mono text-[10px] text-faint">{String(n).padStart(2, '0')}</span>
-                  {c.name}
+                  {lang === 'bn' ? c.bn.name : c.name}
                 </button>
               )
             })}
@@ -98,16 +102,19 @@ function ComponentDetail() {
   const select = useLab((s) => s.selectComponent)
   const c = id ? COMPONENT_BY_ID[id] : null
   const [tab, setTab] = useState<'component' | 'circuit'>('component')
+  const t = useT()
+  const bn = useLab((s) => s.lang) === 'bn'
+  const nameOf = (x: MechComponent) => (bn ? x.bn.name : x.name)
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface">
-      <PanelHeader title={tab === 'circuit' ? 'Safety circuit' : c ? c.group : 'How it fits together'} icon={<Info size={14} />}>
+      <PanelHeader title={t(tab === 'circuit' ? 'Safety circuit' : c ? c.group : 'How it fits together')} icon={<Info size={14} />}>
         <Segmented
           size="sm"
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'component', label: 'Component' },
-            { value: 'circuit', label: 'Safety circuit' },
+            { value: 'component', label: t('Component') },
+            { value: 'circuit', label: t('Safety circuit') },
           ]}
         />
       </PanelHeader>
@@ -116,43 +123,42 @@ function ComponentDetail() {
           <SafetyCircuit />
         ) : c ? (
           <>
-            <h2 className="text-[17px] font-semibold text-ink">{c.name}</h2>
+            <h2 className="text-[17px] font-semibold text-ink">{nameOf(c)}</h2>
             <div className="mt-2 rounded-md border border-accent/30 bg-accent/[0.06] px-2.5 py-1.5 font-mono text-[11.5px] text-accent">
-              LIVE · {c.live(snapshot)}
+              {t('LIVE')} · {c.live(snapshot)}
             </div>
-            <Section title="Purpose">{c.purpose}</Section>
-            <Section title="How it works">{c.how}</Section>
-            <Section title="When it activates">{c.activation}</Section>
+            <Section title={t('Purpose')}>{bn ? c.bn.purpose : c.purpose}</Section>
+            <Section title={t('How it works')}>{bn ? c.bn.how : c.how}</Section>
+            <Section title={t('When it activates')}>{bn ? c.bn.activation : c.activation}</Section>
             {c.id === 'counterweight' && <CounterweightMath s={snapshot} />}
             <div className="mt-4">
-              <Label>Communicates with</Label>
+              <Label>{t('Communicates with')}</Label>
               <div className="space-y-1">
-                {c.talksTo.map((t) => (
+                {c.talksTo.map((link) => (
                   <button
-                    key={t.id + t.via}
-                    onClick={() => select(t.id)}
+                    key={link.id + link.via}
+                    onClick={() => select(link.id)}
                     className="flex w-full items-center gap-2 rounded border border-line bg-surface-2 px-2 py-1 text-left hover:border-line-strong"
                   >
-                    <span className="text-[12px] text-ink">{COMPONENT_BY_ID[t.id].name}</span>
-                    <span className="ml-auto text-[11px] text-muted">{t.via}</span>
+                    <span className="text-[12px] text-ink">{nameOf(COMPONENT_BY_ID[link.id])}</span>
+                    <span className="ml-auto text-right text-[11px] text-muted">{t(link.via)}</span>
                   </button>
                 ))}
               </div>
             </div>
             <div className="mt-4 rounded-md border border-line bg-surface-2 p-2.5">
-              <Label>Real industrial version</Label>
-              <p className="text-[12px] leading-relaxed text-ink-2">{c.industrial}</p>
+              <Label>{t('Real industrial version')}</Label>
+              <p className="text-[12px] leading-relaxed text-ink-2">{bn ? c.bn.industrial : c.industrial}</p>
             </div>
           </>
         ) : (
           <p className="text-[13px] leading-relaxed text-ink-2">
-            Select a component in the list or click it in the 3D view. The selected part glows in the model, and its live status comes straight from the running
-            simulation — go back to <b className="text-ink">Simulation</b>, call the car, and come back to watch the motor, sheave and brake change state.
+            {t('Select a component in the list or click it in the 3D view. The selected part glows in the model, and its live status comes straight from the running simulation. Go back to Simulation, call the car, and come back to watch the motor, sheave and brake change state.')}
           </p>
         )}
         {tab === 'component' && (
           <div className="mt-5">
-            <Label>System signal flow</Label>
+            <Label>{t('System signal flow')}</Label>
             <SignalFlow s={snapshot} selected={id} onSelect={select} />
           </div>
         )}
@@ -174,18 +180,19 @@ function CounterweightMath({ s }: { s: Snapshot }) {
   const cfg = useLab((st) => st.config)
   const cw = cfg.carMass + cfg.ratedLoad * cfg.counterweightRatio
   const car = cfg.carMass + s.loadKg
+  const t = useT()
   return (
     <div className="mt-4 rounded-md border border-line bg-surface-2 p-2.5 font-mono text-[11.5px] leading-relaxed text-ink-2">
-      <div>counterweight = car + {cfg.counterweightRatio} × rated load</div>
+      <div>{t('counterweight')} = {t('car')} + {cfg.counterweightRatio} × {t('rated load')}</div>
       <div className="text-faint">
         {'             '}= {cfg.carMass} + {cfg.counterweightRatio} × {cfg.ratedLoad} = <span className="text-ink">{cw} kg</span>
       </div>
-      <div className="mt-1">car side now = {car} kg</div>
+      <div className="mt-1">{t('car side now')} = {car} kg</div>
       <div>
-        motor lifts |{car} − {cw}| × 9.81 = <span className="text-accent">{fmt((Math.abs(car - cw) * 9.81) / 1000, 2)} kN</span>
+        {t('motor lifts')} |{car} − {cw}| × 9.81 = <span className="text-accent">{fmt((Math.abs(car - cw) * 9.81) / 1000, 2)} kN</span>
       </div>
       <div>
-        without counterweight: {car} × 9.81 = <span className="text-warn">{fmt((car * 9.81) / 1000, 2)} kN</span>
+        {t('without counterweight')}: {car} × 9.81 = <span className="text-warn">{fmt((car * 9.81) / 1000, 2)} kN</span>
       </div>
     </div>
   )
@@ -228,9 +235,10 @@ const EDGES: { a: ComponentId; b: ComponentId; kind: Kind; active: (s: Snapshot)
 const KIND_COLOR: Record<Kind, string> = { power: FLOW_COLORS.power, signal: FLOW_COLORS.signal, mechanical: '#9aa3ad' }
 
 function SignalFlow({ s, selected, onSelect }: { s: Snapshot; selected: ComponentId | null; onSelect: (id: ComponentId) => void }) {
+  const t = useT()
   return (
     <div className="rounded-md border border-line bg-[#0d1014] p-2">
-      <svg viewBox="0 0 370 280" className="w-full" role="img" aria-label="Signal flow between elevator components">
+      <svg viewBox="0 0 370 280" className="w-full" role="img" aria-label={t('Signal flow between elevator components')}>
         <defs>
           {(Object.keys(KIND_COLOR) as Kind[]).map((k) => (
             <marker key={k} id={`arr-${k}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -274,7 +282,7 @@ function SignalFlow({ s, selected, onSelect }: { s: Snapshot; selected: Componen
               stroke={selected === id ? '#4c9aff' : '#2f353e'}
             />
             <text x={x} y={y + 4} textAnchor="middle" fontSize="10.5" fill={selected === id ? '#4c9aff' : '#aab1bb'} fontFamily="Inter, sans-serif">
-              {label}
+              {t(label)}
             </text>
           </g>
         ))}
@@ -283,10 +291,10 @@ function SignalFlow({ s, selected, onSelect }: { s: Snapshot; selected: Componen
         {(Object.keys(KIND_COLOR) as Kind[]).map((k) => (
           <span key={k} className="flex items-center gap-1.5">
             <span className="h-0.5 w-3" style={{ background: KIND_COLOR[k] }} />
-            {k}
+            {t(k)}
           </span>
         ))}
-        <span className="ml-auto">bright = active now</span>
+        <span className="ml-auto">{t('bright = active now')}</span>
       </div>
       <style>{`@keyframes dash { to { stroke-dashoffset: -14; } }`}</style>
     </div>

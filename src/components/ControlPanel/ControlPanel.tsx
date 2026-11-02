@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import type { Algorithm, OperationMode } from '../../engine/types'
 import { runtime } from '../../store/runtime'
 import { useLab } from '../../store/useLab'
+import { useT } from '../../i18n'
 import { Btn, Label, Segmented } from '../ui'
 
 export function ControlPanel() {
@@ -35,36 +36,37 @@ function ModeSection() {
   const algorithm = useLab((s) => s.config.algorithm)
   const setAlgorithm = useLab((s) => s.setAlgorithm)
   const hasCustom = useLab((s) => s.hasCustom)
+  const t = useT()
   return (
     <Section>
-      <Label>Operation</Label>
-      <Segmented value={op} options={OPS} onChange={setOp} />
+      <Label>{t('Operation')}</Label>
+      <Segmented value={op} options={OPS.map((o) => ({ ...o, label: t(o.label), title: t(o.title) }))} onChange={setOp} />
       <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
-        {op === 'normal' && 'Doors close automatically after the dwell time.'}
-        {op === 'manual' && 'You control the doors: the car waits until you press close.'}
-        {op === 'automatic' && 'Simulated passengers call the car and press destinations.'}
+        {op === 'normal' && t('Doors close automatically after the dwell time.')}
+        {op === 'manual' && t('You control the doors: the car waits until you press close.')}
+        {op === 'automatic' && t('Simulated passengers call the car and press destinations.')}
       </p>
       <div className="mt-3">
-        <Label>Lenses</Label>
+        <Label>{t('Lenses')}</Label>
         <div className="flex flex-wrap gap-1">
-          <Btn size="sm" active={debug} onClick={() => toggle('debug')} title="Show every internal event, including sensor ticks">
-            <Bug size={12} /> Debug
+          <Btn size="sm" active={debug} onClick={() => toggle('debug')} title={t('Show every internal event, including sensor ticks')}>
+            <Bug size={12} /> {t('Debug')}
           </Btn>
-          <Btn size="sm" active={engineering} onClick={() => toggle('engineering')} title="X-ray view with power and signal flows">
-            <Cog size={12} /> Engineering
+          <Btn size="sm" active={engineering} onClick={() => toggle('engineering')} title={t('X-ray view with power and signal flows')}>
+            <Cog size={12} /> {t('Engineering')}
           </Btn>
-          <Btn size="sm" active={failureLab} onClick={() => toggle('failureLab')} title="Inject faults and watch the safe response">
-            <TriangleAlert size={12} /> Failures
+          <Btn size="sm" active={failureLab} onClick={() => toggle('failureLab')} title={t('Inject faults and watch the safe response')}>
+            <TriangleAlert size={12} /> {t('Failures')}
           </Btn>
         </div>
       </div>
       <div className="mt-3">
-        <Label>Scheduling</Label>
+        <Label>{t('Scheduling')}</Label>
         <Segmented<Algorithm>
           size="sm"
           value={algorithm}
           onChange={setAlgorithm}
-          options={(hasCustom ? (['LOOK', 'SCAN', 'SSTF', 'FCFS', 'CUSTOM'] as const) : (['LOOK', 'SCAN', 'SSTF', 'FCFS'] as const)).map((a) => ({ value: a, label: a === 'CUSTOM' ? 'Yours' : a }))}
+          options={(hasCustom ? (['LOOK', 'SCAN', 'SSTF', 'FCFS', 'CUSTOM'] as const) : (['LOOK', 'SCAN', 'SSTF', 'FCFS'] as const)).map((a) => ({ value: a, label: a === 'CUSTOM' ? t('Yours') : a }))}
         />
       </div>
     </Section>
@@ -78,10 +80,11 @@ function CarPanel() {
   const emergency = useLab((s) => s.snapshot.state === 'EMERGENCY')
   const a = useLab(useShallow((s) => ({ pressCar: s.pressCar, doorOpen: s.doorOpen, doorClose: s.doorClose, emergencyStop: s.emergencyStop, reset: s.resetSystem })))
   const order = Array.from({ length: floors }, (_, i) => floors - i)
+  const t = useT()
 
   return (
     <Section>
-      <Label>Car operating panel</Label>
+      <Label>{t('Car operating panel')}</Label>
       <div className="rounded-lg border border-line-strong bg-[#0d1013] p-2.5">
         <div className="grid grid-cols-4 gap-1.5">
           {order.map((f) => (
@@ -100,19 +103,19 @@ function CarPanel() {
           ))}
         </div>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
-          <Btn onClick={a.doorOpen} title="Door open">
-            <DoorOpen size={13} /> Open
+          <Btn onClick={a.doorOpen} title={t('Door open')}>
+            <DoorOpen size={13} /> {t('Open')}
           </Btn>
-          <Btn onClick={a.doorClose} title="Door close">
-            <DoorClosed size={13} /> Close
+          <Btn onClick={a.doorClose} title={t('Door close')}>
+            <DoorClosed size={13} /> {t('Close')}
           </Btn>
         </div>
         <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-          <Btn tone="danger" active={estop} onClick={a.emergencyStop} title={estop ? 'Release emergency stop' : 'Emergency stop'}>
-            <OctagonX size={13} /> {estop ? 'Release' : 'E-Stop'}
+          <Btn tone="danger" active={estop} onClick={a.emergencyStop} title={t(estop ? 'Release emergency stop' : 'Emergency stop')}>
+            <OctagonX size={13} /> {t(estop ? 'Release' : 'E-Stop')}
           </Btn>
-          <Btn tone={emergency ? 'accent' : 'default'} disabled={!emergency} onClick={a.reset} title="Return to service after an emergency">
-            <RotateCcw size={13} /> Reset
+          <Btn tone={emergency ? 'accent' : 'default'} disabled={!emergency} onClick={a.reset} title={t('Return to service after an emergency')}>
+            <RotateCcw size={13} /> {t('Reset')}
           </Btn>
         </div>
       </div>
@@ -126,14 +129,15 @@ function HallCalls() {
   const carFloor = useLab((s) => s.snapshot.currentFloor)
   const pressHall = useLab((s) => s.pressHall)
   const order = Array.from({ length: floors }, (_, i) => floors - i)
+  const t = useT()
   return (
     <Section>
-      <Label>Landing calls</Label>
+      <Label>{t('Landing calls')}</Label>
       <div className="space-y-px">
         {order.map((f) => (
           <div key={f} className={clsx('flex h-7 items-center gap-2 rounded px-1.5', carFloor === f && 'bg-surface-2')}>
             <span className="w-5 font-mono text-[12px] text-ink-2">{f}</span>
-            <span className={clsx('h-1.5 w-1.5 rounded-full', carFloor === f ? 'bg-accent' : 'bg-transparent')} title={carFloor === f ? 'Car is here' : undefined} />
+            <span className={clsx('h-1.5 w-1.5 rounded-full', carFloor === f ? 'bg-accent' : 'bg-transparent')} title={carFloor === f ? t('Car is here') : undefined} />
             <div className="ml-auto flex gap-1">
               {(['UP', 'DOWN'] as const).map((d) => {
                 const disabled = (d === 'UP' && f === floors) || (d === 'DOWN' && f === 1)
@@ -143,7 +147,7 @@ function HallCalls() {
                     key={d}
                     disabled={disabled}
                     onClick={() => pressHall(f, d)}
-                    aria-label={`Call ${d} at floor ${f}`}
+                    aria-label={t(d === 'UP' ? 'Call UP at floor {f}' : 'Call DOWN at floor {f}', { f })}
                     className={clsx(
                       'flex h-6 w-7 items-center justify-center rounded border transition-colors',
                       disabled ? 'invisible' : on ? 'border-accent bg-accent/20 text-accent' : 'border-line-strong bg-surface-2 text-muted hover:text-ink',
@@ -166,12 +170,13 @@ function LoadSection() {
   const load = useLab((s) => s.snapshot.loadKg)
   const passengers = useLab((s) => s.snapshot.passengers)
   const generation = useLab((s) => s.generation)
+  const t = useT()
   return (
     <Section className="border-b-0">
-      <Label>Car load</Label>
+      <Label>{t('Car load')}</Label>
       {op === 'automatic' ? (
         <p className="text-[12px] text-muted">
-          {passengers} passenger(s) aboard · <span className="font-mono text-ink">{load} kg</span>
+          {t('{n} passenger(s) aboard', { n: passengers })} · <span className="font-mono text-ink">{load} kg</span>
         </p>
       ) : (
         <>
@@ -187,9 +192,9 @@ function LoadSection() {
           />
           <div className="flex justify-between font-mono text-[11px] text-muted">
             <span>{load} kg</span>
-            <span>≈ {Math.round(load / 75)} persons</span>
+            <span>≈ {t('{n} persons', { n: Math.round(load / 75) })}</span>
           </div>
-          <p className="mt-1 text-[11.5px] leading-snug text-muted">Changes the motor power: compare an empty car going up vs. a full one.</p>
+          <p className="mt-1 text-[11.5px] leading-snug text-muted">{t('Changes the motor power: compare an empty car going up vs. a full one.')}</p>
         </>
       )}
     </Section>

@@ -17,8 +17,8 @@
   --color-warn: #f5a524;
   --color-danger: #f2545b;
   --color-ok: #4ade80;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: 'Inter', 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Hind Siliguri', ui-monospace, monospace;
   --font-dot: 'Doto', 'IBM Plex Mono', monospace;
 }
 

@@ -3,6 +3,7 @@ import { DEFAULT_CONFIG } from '../engine/config'
 import type { SimConfig, TrafficProfile } from '../engine/types'
 import { Btn, Label, Segmented } from '../components/ui'
 import { useLab } from '../store/useLab'
+import { useT } from '../i18n'
 
 type NumKey = { [K in keyof SimConfig]: SimConfig[K] extends number ? K : never }[keyof SimConfig]
 
@@ -25,18 +26,19 @@ export function SettingsPage() {
   const apply = useLab((s) => s.applyConfig)
   const [draft, setDraft] = useState<SimConfig>(config)
   const dirty = JSON.stringify(draft) !== JSON.stringify(config)
+  const t = useT()
 
   return (
     <div className="h-full overflow-auto">
       <div className="mx-auto max-w-[760px] px-6 py-6">
-        <h1 className="text-[20px] font-semibold text-ink">Settings</h1>
-        <p className="mt-1 text-[13px] text-ink-2">Physical parameters of the simulated lift. Applying restarts the simulation.</p>
+        <h1 className="text-[20px] font-semibold text-ink">{t('Settings')}</h1>
+        <p className="mt-1 text-[13px] text-ink-2">{t('Physical parameters of the simulated lift. Applying restarts the simulation.')}</p>
         <div className="mt-5 divide-y divide-line rounded-lg border border-line bg-surface">
           {FIELDS.map((f) => (
             <div key={f.key} className="grid grid-cols-[220px_1fr_110px] items-center gap-4 px-4 py-2.5">
               <div>
-                <div className="text-[12.5px] text-ink">{f.label}</div>
-                {f.hint && <div className="text-[11px] text-muted">{f.hint}</div>}
+                <div className="text-[12.5px] text-ink">{t(f.label)}</div>
+                {f.hint && <div className="text-[11px] text-muted">{t(f.hint)}</div>}
               </div>
               <input
                 type="range"
@@ -48,50 +50,48 @@ export function SettingsPage() {
                 className="accent-[var(--color-accent)]"
               />
               <span className="text-right font-mono text-[12px] text-ink">
-                {draft[f.key]} <span className="text-faint">{f.unit}</span>
+                {draft[f.key]} <span className="text-faint">{t(f.unit)}</span>
               </span>
             </div>
           ))}
           <div className="grid grid-cols-[220px_1fr] items-center gap-4 px-4 py-2.5">
             <div>
-              <div className="text-[12.5px] text-ink">Motion profile</div>
-              <div className="text-[11px] text-muted">How the drive ramps speed up and down.</div>
+              <div className="text-[12.5px] text-ink">{t('Motion profile')}</div>
+              <div className="text-[11px] text-muted">{t('How the drive ramps speed up and down.')}</div>
             </div>
             <Segmented<SimConfig['motionProfile']>
               value={draft.motionProfile}
               onChange={(v) => setDraft({ ...draft, motionProfile: v })}
               options={[
-                { value: 's-curve', label: 'S-curve (jerk limited)' },
-                { value: 'trapezoid', label: 'Trapezoid' },
+                { value: 's-curve', label: t('S-curve (jerk limited)') },
+                { value: 'trapezoid', label: t('Trapezoid') },
               ]}
             />
           </div>
           <div className="grid grid-cols-[220px_1fr] items-center gap-4 px-4 py-2.5">
-            <div className="text-[12.5px] text-ink">Auto-mode traffic pattern</div>
+            <div className="text-[12.5px] text-ink">{t('Auto-mode traffic pattern')}</div>
             <Segmented<TrafficProfile>
               value={draft.trafficProfile}
               onChange={(v) => setDraft({ ...draft, trafficProfile: v })}
               options={[
-                { value: 'uniform', label: 'Uniform' },
-                { value: 'up-peak', label: 'Up-peak' },
-                { value: 'down-peak', label: 'Down-peak' },
-                { value: 'lunch', label: 'Lunch' },
+                { value: 'uniform', label: t('Uniform') },
+                { value: 'up-peak', label: t('Up-peak') },
+                { value: 'down-peak', label: t('Down-peak') },
+                { value: 'lunch', label: t('Lunch') },
               ]}
             />
           </div>
         </div>
         <div className="mt-4 flex gap-2">
           <Btn tone="accent" disabled={!dirty} onClick={() => apply(draft)}>
-            Apply &amp; restart
+            {t('Apply & restart')}
           </Btn>
-          <Btn onClick={() => setDraft({ ...DEFAULT_CONFIG, algorithm: config.algorithm, mode: config.mode })}>Restore defaults</Btn>
+          <Btn onClick={() => setDraft({ ...DEFAULT_CONFIG, algorithm: config.algorithm, mode: config.mode })}>{t('Restore defaults')}</Btn>
         </div>
         <div className="mt-8">
           <Label>About this model</Label>
           <p className="text-[12.5px] leading-relaxed text-ink-2">
-            LiftLab is an educational simulation with plausible physics (constant-acceleration motion profile, force balance on the sheave, a fixed 60 Hz
-            deterministic time step). It simplifies or omits many things real lifts have: jerk limiting, rope stretch, load weighing, door-zone re-levelling,
-            group control, and certified hard-wired safety circuits. It must not be used to design or operate real equipment.
+            {t('LiftLab is an educational simulation with plausible physics (motion profiles, force balance on the sheave, a fixed 60 Hz deterministic time step). It simplifies or omits many things real lifts have: rope stretch, load weighing, door-zone re-levelling and certified hard-wired safety circuits. It must not be used to design or operate real equipment.')}
           </p>
         </div>
       </div>

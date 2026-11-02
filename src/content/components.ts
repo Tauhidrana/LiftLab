@@ -1,4 +1,5 @@
 import type { Snapshot } from '../engine/types'
+import { COMPONENTS_BN, type ComponentBn } from './components.bn'
 
 export type ComponentId =
   | 'motor'
@@ -29,11 +30,12 @@ export interface MechComponent {
   /** What the real industrial version adds beyond this model. */
   industrial: string
   live: (s: Snapshot) => string
+  bn: ComponentBn
 }
 
 const f = (n: number, d = 2) => n.toFixed(d)
 
-export const COMPONENTS: MechComponent[] = [
+const RAW: Omit<MechComponent, 'bn'>[] = [
   {
     id: 'motor',
     name: 'Electric traction motor',
@@ -267,5 +269,7 @@ export const COMPONENTS: MechComponent[] = [
     live: () => 'housing drive and controller',
   },
 ]
+
+export const COMPONENTS: MechComponent[] = RAW.map((c) => ({ ...c, bn: COMPONENTS_BN[c.id] }))
 
 export const COMPONENT_BY_ID = Object.fromEntries(COMPONENTS.map((c) => [c.id, c])) as Record<ComponentId, MechComponent>

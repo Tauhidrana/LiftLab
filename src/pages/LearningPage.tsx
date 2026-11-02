@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Btn } from '../components/ui'
 import { runtime } from '../store/runtime'
 import { useLab } from '../store/useLab'
+import { useT } from '../i18n'
 
 interface Topic {
   id: string
@@ -201,11 +202,12 @@ const TOPICS: Topic[] = [
 
 export function LearningPage() {
   const [active, setActive] = useState(TOPICS[0].id)
-  const t = TOPICS.find((x) => x.id === active)!
+  const topic = TOPICS.find((x) => x.id === active)!
+  const t = useT()
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_1fr] md:grid-cols-[300px_1fr] md:grid-rows-1">
       <nav className="max-h-[30vh] overflow-auto border-b border-line bg-surface p-2 md:max-h-none md:border-r md:border-b-0">
-        <div className="px-2 pt-1 pb-2 text-[12px] font-medium text-faint">Topics</div>
+        <div className="px-2 pt-1 pb-2 text-[12px] font-medium text-faint">{t('Topics')}</div>
         {TOPICS.map((x, i) => (
           <button
             key={x.id}
@@ -216,37 +218,37 @@ export function LearningPage() {
             )}
           >
             <span className="font-mono text-[10.5px] text-faint">{String(i + 1).padStart(2, '0')}</span>
-            {x.title}
+            {t(x.title)}
           </button>
         ))}
       </nav>
       <article className="overflow-auto px-4 py-6 md:px-10 md:py-8">
         <div className="max-w-[680px]">
-          <h1 className="text-[22px] font-semibold text-ink">{t.title}</h1>
-          {t.body.map((p, i) => (
+          <h1 className="text-[22px] font-semibold text-ink">{t(topic.title)}</h1>
+          {topic.body.map((p, i) => (
             <p key={i} className="mt-3 text-[14px] leading-[1.7] text-ink-2">
-              {p}
+              {t(p)}
             </p>
           ))}
-          {t.steps && (
+          {topic.steps && (
             <ol className="mt-4 space-y-1.5">
-              {t.steps.map((s, i) => (
+              {topic.steps.map((s, i) => (
                 <li key={i} className="flex gap-3 text-[13.5px] text-ink-2">
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-line-strong font-mono text-[10.5px] text-muted">
                     {i + 1}
                   </span>
-                  {s}
+                  {t(s)}
                 </li>
               ))}
             </ol>
           )}
           <div className="mt-6 rounded-lg border border-accent/30 bg-accent/[0.05] p-4">
             <div className="flex items-center gap-2 text-[12px] font-medium text-accent">
-              <FlaskConical size={14} /> Try it in the lab
+              <FlaskConical size={14} /> {t('Try it in the lab')}
             </div>
-            <p className="mt-1 text-[12.5px] text-ink-2">This resets the simulation and sets up the scenario below.</p>
-            <Btn tone="accent" className="mt-3" onClick={t.run}>
-              {t.tryLabel}
+            <p className="mt-1 text-[12.5px] text-ink-2">{t('This resets the simulation and sets up the scenario below.')}</p>
+            <Btn tone="accent" className="mt-3" onClick={topic.run}>
+              {t(topic.tryLabel)}
             </Btn>
           </div>
         </div>

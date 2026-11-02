@@ -11,11 +11,13 @@ interface Props {
   xray: boolean
   clip: THREE.Plane[]
   display: THREE.Texture
+  /** Furnish each landing as a lobby (first-person view only: its walls would hide the shaft from outside). */
+  lobby: boolean
 }
 
 const GLASS = '#a9c2d3'
 
-export function Building({ d, xray, clip, display }: Props) {
+export function Building({ d, xray, clip, display, lobby }: Props) {
   const floors = useMemo(() => Array.from({ length: d.floors }, (_, i) => i + 1), [d.floors])
   const slabOpacity = xray ? 0.07 : 1
   const wallOpacity = xray ? 0.05 : 0.16
@@ -50,6 +52,8 @@ export function Building({ d, xray, clip, display }: Props) {
             <WallPanel x0={d.door.open / 2} x1={s.x1} y0={0} y1={d.H - 0.2} opacity={landingOpacity} clip={clip} z={d.door.landingZ + 0.06} />
             <WallPanel x0={-d.door.open / 2} x1={d.door.open / 2} y0={2.2} y1={d.H - 0.2} opacity={landingOpacity} clip={clip} z={d.door.landingZ + 0.06} />
 
+            <DoorFrame d={d} />
+            {lobby && <Lobby d={d} floor={f} />}
             <FloorSign floor={f} x={-0.9} y={1.95} z={d.door.landingZ + 0.1} />
             {/* Landing position indicator above the door */}
             <mesh position={[0, 2.45, d.door.landingZ + 0.1]}>
@@ -64,6 +68,8 @@ export function Building({ d, xray, clip, display }: Props) {
       })}
 
       <LandingDoors d={d} />
+      {lobby && <LobbyLight d={d} />}
+      {!xray && !lobby && <Facade d={d} clip={clip} />}
 
       {/* Shaft walls: back and sides (glass-like so the machinery stays visible) */}
       <mesh position={[0, (d.pitBottom + d.shaftTop) / 2, s.z0 - 0.08]}>
@@ -227,5 +233,170 @@ function LandingDoors({ d }: { d: Dims }) {
         </group>
       ))}
     </>
+  )
+}
+
+/** Brushed-steel architrave around each landing door. */
+function DoorFrame({ d }: { d: Dims }) {
+  const z = d.door.landingZ + 0.11
+  const half = d.door.open / 2
+  const mat = <meshStandardMaterial color="#ffffff" map={surfaceTexture('brushed', 0.3, 1)} metalness={0.9} roughness={0.3} />
+  return (
+    <group>
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * (half + 0.04), 1.12, z]} castShadow>
+          <boxGeometry args={[0.08, 2.24, 0.04]} />
+          {mat}
+        </mesh>
+      ))}
+      <mesh position={[0, 2.26, z]} castShadow>
+        <boxGeometry args={[d.door.open + 0.16, 0.08, 0.04]} />
+        {mat}
+      </mesh>
+      {/* landing sill */}
+      <mesh position={[0, 0.005, d.door.landingZ + 0.06]} receiveShadow>
+        <boxGeometry args={[d.door.open + 0.1, 0.012, 0.12]} />
+        <meshStandardMaterial color="#c8ccd0" metalness={0.9} roughness={0.45} />
+      </mesh>
+    </group>
+  )
+}
+
+/** A simple lift lobby on every floor: marble floor, painted walls, ceiling downlights, a bench. */
+function Lobby({ d, floor }: { d: Dims; floor: number }) {
+  const z0 = d.door.landingZ + 0.1
+  const z1 = z0 + 2.6
+  const x = 2.6
+  const ceil = d.H - 0.22
+  const marble = useMemo(() => surfaceTexture('marble', 3, 1.4), [])
+  const paint = useMemo(() => surfaceTexture('ceiling', 2, 1), [])
+  const wood = useMemo(() => surfaceTexture('wood', 1, 1), [])
+  const sign = useMemo(() => {
+    const t = makeCanvasTexture(512, 256)
+    t.ctx.fillStyle = '#2b2f35'
+    t.ctx.fillRect(0, 0, 512, 256)
+    t.ctx.fillStyle = '#f3f4f6'
+    t.ctx.textAlign = 'center'
+    t.ctx.textBaseline = 'middle'
+    t.ctx.font = font(150, 600)
+    t.ctx.fillText(String(floor), 256, 120)
+    t.ctx.fillStyle = '#9ca3af'
+    t.ctx.font = font(30, 500)
+    t.ctx.fillText(`FLOOR · তলা`, 256, 222)
+    t.texture.needsUpdate = true
+    return t.texture
+  }, [floor])
+  useEffect(() => () => sign.dispose(), [sign])
+  const wall = <meshStandardMaterial color="#d8d1c4" map={paint} roughness={0.85} />
+  return (
+    <group>
+      <mesh position={[0, 0.004, (z0 + z1) / 2]} rotation-x={-Math.PI / 2} receiveShadow>
+        <planeGeometry args={[x * 2, z1 - z0]} />
+        <meshStandardMaterial color="#cfcac1" map={marble} roughness={0.2} metalness={0} />
+      </mesh>
+      <mesh position={[0, ceil, (z0 + z1) / 2]} rotation-x={Math.PI / 2}>
+        <planeGeometry args={[x * 2, z1 - z0]} />
+        <meshStandardMaterial color="#f4f2ee" roughness={0.95} />
+      </mesh>
+      {[-1.4, 0, 1.4].map((lx) => (
+        <mesh key={lx} position={[lx, ceil - 0.004, z0 + 1.2]} rotation-x={Math.PI / 2}>
+          <circleGeometry args={[0.08, 24]} />
+          <meshStandardMaterial color="#ffffff" emissive="#fff3e0" emissiveIntensity={3} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+      {/* back wall, side walls */}
+      <mesh position={[0, ceil / 2, z1]} rotation-y={Math.PI} receiveShadow>
+        <planeGeometry args={[x * 2, ceil]} />
+        {wall}
+      </mesh>
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * x, ceil / 2, (z0 + z1) / 2]} rotation-y={-s * (Math.PI / 2)} receiveShadow>
+          <planeGeometry args={[z1 - z0, ceil]} />
+          {wall}
+        </mesh>
+      ))}
+      {/* skirting */}
+      <mesh position={[0, 0.05, z1 - 0.01]}>
+        <boxGeometry args={[x * 2, 0.1, 0.02]} />
+        <meshStandardMaterial color="#3a3530" roughness={0.6} />
+      </mesh>
+      {/* floor number on the back wall, and a wooden bench */}
+      <mesh position={[0, 1.65, z1 - 0.012]} rotation-y={Math.PI}>
+        <planeGeometry args={[0.8, 0.4]} />
+        <meshStandardMaterial map={sign} roughness={0.5} />
+      </mesh>
+      <group position={[-1.5, 0, z1 - 0.35]}>
+        <mesh position={[0, 0.44, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.4, 0.06, 0.4]} />
+          <meshStandardMaterial color="#ffffff" map={wood} roughness={0.55} />
+        </mesh>
+        {[-0.6, 0.6].map((bx) => (
+          <mesh key={bx} position={[bx, 0.21, 0]} castShadow>
+            <boxGeometry args={[0.05, 0.42, 0.36]} />
+            <meshStandardMaterial color="#2b2b2b" metalness={0.8} roughness={0.4} />
+          </mesh>
+        ))}
+      </group>
+      {/* potted plant */}
+      <group position={[1.9, 0, z1 - 0.4]}>
+        <mesh position={[0, 0.25, 0]} castShadow>
+          <cylinderGeometry args={[0.2, 0.16, 0.5, 24]} />
+          <meshStandardMaterial color="#2f3236" roughness={0.5} />
+        </mesh>
+        <mesh position={[0, 0.85, 0]} castShadow>
+          <icosahedronGeometry args={[0.38, 1]} />
+          <meshStandardMaterial color="#3f6b3a" roughness={0.8} flatShading />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+/** One warm light that follows the car's floor, so the lobby you step into is lit. */
+function LobbyLight({ d }: { d: Dims }) {
+  const ref = useRef<THREE.PointLight>(null!)
+  useFrame(() => {
+    const f = Math.round(runtime.controller.motion.position / d.H)
+    ref.current.position.set(0, f * d.H + d.H - 0.6, d.door.landingZ + 1.4)
+  })
+  return <pointLight ref={ref} intensity={5} distance={6} decay={2} color="#fff1dc" />
+}
+
+/** Glass curtain wall with aluminium mullions and dark spandrel bands, so the frame reads as an office tower. */
+function Facade({ d, clip }: { d: Dims; clip: THREE.Plane[] }) {
+  const { building: b } = d
+  const top = d.maxPos + d.H
+  const sides: { x: number; z: number; len: number; rot: number }[] = [
+    { x: 0, z: b.z1 + 0.16, len: b.x1 - b.x0, rot: 0 },
+    { x: 0, z: b.z0 - 0.16, len: b.x1 - b.x0, rot: 0 },
+    { x: b.x0 - 0.16, z: (b.z0 + b.z1) / 2, len: b.z1 - b.z0, rot: Math.PI / 2 },
+    { x: b.x1 + 0.16, z: (b.z0 + b.z1) / 2, len: b.z1 - b.z0, rot: Math.PI / 2 },
+  ]
+  return (
+    <group>
+      {sides.map((s, i) => {
+        const bays = Math.round(s.len / 1.4)
+        return (
+          <group key={i} position={[s.x, 0, s.z]} rotation-y={s.rot}>
+            <mesh position={[0, top / 2, 0]}>
+              <planeGeometry args={[s.len, top]} />
+              <HLMaterial color="#8fa9bd" transparent opacity={0.2} roughness={0.04} metalness={0.7} side={THREE.DoubleSide} clip={clip} />
+            </mesh>
+            {Array.from({ length: bays + 1 }, (_, k) => (
+              <mesh key={k} position={[-s.len / 2 + (k * s.len) / bays, top / 2, 0]} castShadow>
+                <boxGeometry args={[0.05, top, 0.08]} />
+                <HLMaterial color="#2a2f35" metalness={0.8} roughness={0.35} clip={clip} />
+              </mesh>
+            ))}
+            {Array.from({ length: d.floors + 1 }, (_, f) => (
+              <mesh key={`b${f}`} position={[0, f * d.H - 0.12, 0]} castShadow>
+                <boxGeometry args={[s.len + 0.06, 0.34, 0.1]} />
+                <HLMaterial color="#3a4048" metalness={0.5} roughness={0.5} clip={clip} />
+              </mesh>
+            ))}
+          </group>
+        )
+      })}
+    </group>
   )
 }

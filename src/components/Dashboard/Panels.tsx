@@ -9,6 +9,7 @@ import { useLab } from '../../store/useLab'
 import { fmt } from '../../utils/format'
 import { KV, Label } from '../ui'
 import { LiveLineChart } from './LineChart'
+import { useMsg, useT } from '../../i18n'
 
 /* ------------------------------------------------------------------ */
 /* Request queue                                                       */
@@ -32,6 +33,8 @@ export function QueuePanel() {
   const decision = useMemo(() => [...events].reverse().find((e) => e.event === 'NEXT_DESTINATION_SELECTED'), [events])
   const order = Array.from({ length: s.floors }, (_, i) => s.floors - i)
   const carAt = s.position / s.floorHeight + 1
+  const t = useT()
+  const msg = useMsg()
 
   return (
     <div className="grid h-full min-h-0 grid-cols-[minmax(240px,320px)_1fr] gap-0 overflow-hidden">
@@ -47,41 +50,40 @@ export function QueuePanel() {
             <div key={f} className={clsx('flex h-6 items-center gap-2 border-b border-line/50 font-mono text-[11.5px]', here && 'bg-accent/8')}>
               <span className="w-5 text-right text-muted">{f}</span>
               <span className="w-5 text-accent">{here ? '■' : ''}</span>
-              <span className={clsx('w-16', car ? 'text-ink' : 'text-faint')}>{car ? `car ${s.time - Math.floor(car.time)}s` : '·'}</span>
+              <span className={clsx('w-16', car ? 'text-ink' : 'text-faint')}>{car ? `${t('car')} ${s.time - Math.floor(car.time)}s` : '·'}</span>
               <span className={clsx('w-14', up ? 'text-ink' : 'text-faint')}>{up ? `▲ ${s.time - Math.floor(up.time)}s` : '·'}</span>
               <span className={clsx('w-14', down ? 'text-ink' : 'text-faint')}>{down ? `▼ ${s.time - Math.floor(down.time)}s` : '·'}</span>
-              {s.target === f && <span className="ml-auto text-[10px] text-accent">TARGET</span>}
+              {s.target === f && <span className="ml-auto text-[10px] text-accent">{t('TARGET')}</span>}
             </div>
           )
         })}
       </div>
       <div className="overflow-auto p-3">
-        <Label>requestQueue (insertion order)</Label>
+        <Label>{`requestQueue (${t('insertion order')})`}</Label>
         <div className="flex min-h-7 flex-wrap gap-1">
-          {s.carCalls.length + s.hallCalls.length === 0 && <span className="text-muted">empty — the car will go IDLE</span>}
+          {s.carCalls.length + s.hallCalls.length === 0 && <span className="text-muted">{t('empty — the car will go IDLE')}</span>}
           {[...s.carCalls.map((c) => ({ k: `c${c.floor}`, t: c.time, label: `${c.floor}`, kind: 'car' })), ...s.hallCalls.map((h) => ({ k: `h${h.floor}${h.direction}`, t: h.time, label: `${h.floor}${h.direction === 'UP' ? '▲' : '▼'}`, kind: 'hall' }))]
             .sort((a, b) => a.t - b.t)
             .map((r) => (
               <span key={r.k} className="rounded border border-line-strong bg-surface-2 px-1.5 py-0.5 font-mono text-[11.5px] text-ink">
                 {r.label}
-                <span className="ml-1 text-[10px] text-faint">{r.kind}</span>
+                <span className="ml-1 text-[10px] text-faint">{t(r.kind)}</span>
               </span>
             ))}
         </div>
         <div className="mt-4">
-          <Label>Last scheduler decision · {s.algorithm}</Label>
+          <Label>{`${t('Last scheduler decision')} · ${s.algorithm}`}</Label>
           {decision ? (
             <div className="space-y-1">
-              <p className="text-[12.5px] text-ink">{decision.message}</p>
-              <p className="font-mono text-[11px] text-muted">candidates (floor, kind, distance): {String(decision.inputs?.candidates ?? '')}</p>
+              <p className="text-[12.5px] text-ink">{msg(decision.message)}</p>
+              <p className="font-mono text-[11px] text-muted">{t('candidates (floor, kind, distance)')}: {String(decision.inputs?.candidates ?? '')}</p>
             </div>
           ) : (
-            <p className="text-muted">No decision yet.</p>
+            <p className="text-muted">{t('No decision yet.')}</p>
           )}
         </div>
         <p className="mt-4 text-[11.5px] leading-relaxed text-muted">
-          Car calls come from inside the car; hall calls (▲/▼) from the landings. With <b className="text-ink-2">LOOK</b>, the car serves calls ahead of it in
-          its direction of travel first — that is why a ▼ call above the car may wait until the car turns around.
+          {t('Car calls come from inside the car; hall calls (▲/▼) from the landings. With LOOK, the car serves calls ahead of it in its direction of travel first. That is why a ▼ call above the car may wait until the car turns around.')}
         </p>
       </div>
     </div>
@@ -121,6 +123,7 @@ export function MotionPanel() {
   const total = targetPos !== null ? Math.abs(targetPos - trip.current.start) : 0
   const progress = total > 0 ? 1 - remaining / total : 0
   const maxPos = (s.floors - 1) * s.H
+  const t = useT()
 
   return (
     <div className="grid h-full min-h-0 grid-cols-[88px_220px_1fr] overflow-hidden">
@@ -146,7 +149,7 @@ export function MotionPanel() {
       <div className="overflow-auto border-r border-line px-3 py-2">
         <KV k="Current floor" v={s.floor} />
         <KV k="Target floor" v={s.target ?? '—'} tone={s.target ? 'accent' : undefined} />
-        <KV k="Direction" v={s.dir} />
+        <KV k="Direction" v={t(s.dir)} />
         <KV k="Position" v={`${fmt(s.pos)} m`} />
         <KV k="Distance left" v={`${fmt(remaining)} m`} />
         <div className="my-1 h-1 overflow-hidden rounded-full bg-surface-3">
@@ -154,7 +157,7 @@ export function MotionPanel() {
         </div>
         <KV k="Velocity" v={`${fmt(Math.abs(s.v))} m/s`} />
         <KV k="Acceleration" v={`${fmt(s.a)} m/s²`} />
-        <KV k="Phase" v={s.phase} tone={s.phase === 'BRAKING' ? 'danger' : s.phase === 'STOPPED' ? undefined : 'accent'} />
+        <KV k="Phase" v={t(s.phase)} tone={s.phase === 'BRAKING' ? 'danger' : s.phase === 'STOPPED' ? undefined : 'accent'} />
         <KV k="Sheave" v={`${fmt(Math.abs(s.rpm), 0)} rpm`} />
       </div>
       <div className="grid min-w-0 grid-cols-3 gap-4 overflow-hidden px-4 py-2">
@@ -162,9 +165,9 @@ export function MotionPanel() {
         <LiveLineChart title="Acceleration" unit="m/s²" pick={pickA} min={-0.8} max={0.8} color="#c4b5fd" />
         <LiveLineChart title="Motor power" unit="kW, below zero = regenerating" pick={pickP} min={-3} max={3} color="#f5a524" />
         <p className="col-span-3 -mt-1 text-[11.5px] leading-relaxed text-muted">
-          {s.profile === 's-curve'
+          {t(s.profile === 's-curve'
             ? 'S-curve profile: acceleration itself ramps up and down (limited jerk), so the velocity curve has rounded corners and the ride feels smooth. The last few centimetres are crept at levelling speed.'
-            : 'Trapezoid profile: constant acceleration, cruise, then deceleration once the remaining distance equals the braking distance v²/2a. Acceleration jumps instantly, which passengers feel as a jolt.'}
+            : 'Trapezoid profile: constant acceleration, cruise, then deceleration once the remaining distance equals the braking distance v²/2a. Acceleration jumps instantly, which passengers feel as a jolt.')}
         </p>
       </div>
     </div>
@@ -183,6 +186,7 @@ export function MetricsPanel() {
   const carSide = cfg.carMass + s.loadKg
   const imbalance = carSide - cw
   const net = s.energyUsedKwh - s.energyRegenKwh
+  const t = useT()
   return (
     <div className="grid h-full min-h-0 grid-cols-[1fr_1fr_1.1fr] overflow-hidden">
       <div className="overflow-auto border-r border-line p-3">
@@ -207,13 +211,11 @@ export function MetricsPanel() {
         <Label>Counterweight balance</Label>
         <KV k="Car + load" v={`${carSide} kg`} />
         <KV k="Counterweight" v={`${cw} kg`} />
-        <KV k="Imbalance" v={`${imbalance > 0 ? '+' : ''}${imbalance} kg (${imbalance > 0 ? 'car heavier' : imbalance < 0 ? 'counterweight heavier' : 'balanced'})`} />
+        <KV k="Imbalance" v={`${imbalance > 0 ? '+' : ''}${imbalance} kg (${t(imbalance > 0 ? 'car heavier' : imbalance < 0 ? 'counterweight heavier' : 'balanced')})`} />
         <KV k="Static motor force" v={`${fmt(Math.abs(imbalance * 9.81) / 1000, 2)} kN`} />
         <KV k="Without counterweight" v={`${fmt((carSide * 9.81) / 1000, 2)} kN`} tone="warn" />
         <p className="mt-2 text-[11.5px] leading-relaxed text-muted">
-          The counterweight equals the car plus {cfg.counterweightRatio * 100}% of rated load. The motor only lifts the <i>difference</i> —{' '}
-          {fmt((Math.abs(imbalance) / carSide) * 100, 0)}% of what it would lift without one. When the heavier side goes down, the motor brakes it and works as a generator
-          (regeneration).
+          {t('The counterweight equals the car plus {p}% of rated load. The motor only lifts the difference: {q}% of what it would lift without one. When the heavier side goes down, the motor brakes it and works as a generator (regeneration).', { p: cfg.counterweightRatio * 100, q: fmt((Math.abs(imbalance) / carSide) * 100, 0) })}
         </p>
       </div>
       <div className="overflow-auto p-3">
@@ -223,7 +225,7 @@ export function MetricsPanel() {
             .map((n, i) => ({ n, f: i + 1 }))
             .reverse()
             .map(({ n, f }) => (
-              <div key={f} className="group flex items-center gap-2" title={`Floor ${f}: ${n} calls`}>
+              <div key={f} className="group flex items-center gap-2" title={t('Floor {f}: {n} calls', { f, n })}>
                 <span className="w-4 text-right font-mono text-[10.5px] text-muted">{f}</span>
                 <div className="h-3.5 flex-1 rounded-[3px] bg-surface-2">
                   <div
@@ -235,7 +237,7 @@ export function MetricsPanel() {
               </div>
             ))}
         </div>
-        <p className="mt-2 text-[11.5px] text-muted">Switch to Auto with the up-peak profile (Settings) to see the lobby light up.</p>
+        <p className="mt-2 text-[11.5px] text-muted">{t('Switch to Auto with the up-peak profile (Settings) to see the lobby light up.')}</p>
       </div>
     </div>
   )
@@ -260,6 +262,8 @@ export function FaultsPanel() {
   const emergency = useLab((s) => s.snapshot.emergency)
   const toggle = useLab((s) => s.toggleFault)
   const reset = useLab((s) => s.resetSystem)
+  const t = useT()
+  const msg = useMsg()
   return (
     <div className="grid h-full min-h-0 grid-cols-[1.4fr_1fr] overflow-hidden">
       <div className="overflow-auto border-r border-line p-3">
@@ -280,9 +284,9 @@ export function FaultsPanel() {
                   <span className={clsx('relative h-3.5 w-6 rounded-full transition-colors', on ? 'bg-danger' : 'bg-line-strong')}>
                     <span className={clsx('absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white transition-all', on ? 'left-3' : 'left-0.5')} />
                   </span>
-                  <span className={clsx('text-[12px] font-medium', on ? 'text-danger' : 'text-ink')}>{FAULT_LABELS[f]}</span>
+                  <span className={clsx('text-[12px] font-medium', on ? 'text-danger' : 'text-ink')}>{t(FAULT_LABELS[f])}</span>
                 </div>
-                <p className="mt-1 text-[11px] leading-snug text-muted">{FAULT_INFO[f]}</p>
+                <p className="mt-1 text-[11px] leading-snug text-muted">{t(FAULT_INFO[f])}</p>
               </button>
             )
           })}
@@ -297,23 +301,22 @@ export function FaultsPanel() {
               <span className={clsx('flex h-4 w-4 items-center justify-center rounded-full', l.ok ? 'bg-ok/15 text-ok' : 'bg-danger/20 text-danger')}>
                 {l.ok ? <Check size={11} /> : <X size={11} />}
               </span>
-              <span className={clsx('text-[12px]', l.ok ? 'text-ink-2' : 'text-danger')}>{l.label}</span>
-              <span className="ml-auto font-mono text-[10px] text-faint">{l.ok ? 'closed' : 'OPEN'}</span>
+              <span className={clsx('text-[12px]', l.ok ? 'text-ink-2' : 'text-danger')}>{t(l.label)}</span>
+              <span className="ml-auto font-mono text-[10px] text-faint">{t(l.ok ? 'closed' : 'OPEN')}</span>
             </div>
           ))}
         </div>
         {emergency && (
           <div className="mt-3 rounded-md border border-danger/40 bg-danger/10 p-2">
-            <div className="font-mono text-[11px] text-danger">EMERGENCY · {emergency.phase}</div>
-            <p className="mt-0.5 text-[12px] text-ink">{emergency.reason}</p>
+            <div className="font-mono text-[11px] text-danger">{t('EMERGENCY')} · {t(emergency.phase)}</div>
+            <p className="mt-0.5 text-[12px] text-ink">{msg(emergency.reason)}</p>
             <button onClick={reset} className="mt-1.5 text-[12px] text-accent hover:underline">
-              Clear the faults, then press Reset
+              {t('Clear the faults, then press Reset')}
             </button>
           </div>
         )}
         <p className="mt-3 text-[11px] leading-relaxed text-muted">
-          Educational model. Real lifts implement the safety chain as hard-wired contacts in series and certified safety circuits, never in application software
-          alone. Never bypass a safety device.
+          {t('Educational model. Real lifts implement the safety chain as hard-wired contacts in series and certified safety circuits, never in application software alone. Never bypass a safety device.')}
         </p>
       </div>
     </div>

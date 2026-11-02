@@ -1,3 +1,4 @@
+import { useT } from '../../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { runtime, type Sample } from '../../store/runtime'
 
@@ -22,6 +23,7 @@ export function LiveLineChart({
   color?: string
   height?: number
 }) {
+  const t = useT()
   const canvas = useRef<HTMLCanvasElement>(null)
   const hover = useRef<number | null>(null)
   const [tip, setTip] = useState<{ x: number; text: string } | null>(null)
@@ -106,8 +108,8 @@ export function LiveLineChart({
   return (
     <div className="relative">
       <div className="mb-1 flex items-baseline gap-2">
-        <span className="text-[11px] font-medium text-ink-2">{title}</span>
-        <span className="font-mono text-[10px] text-faint">{unit}</span>
+        <span className="text-[11px] font-medium text-ink-2">{t(title)}</span>
+        <span className="font-mono text-[10px] text-faint">{t(unit)}</span>
       </div>
       <canvas
         ref={canvas}

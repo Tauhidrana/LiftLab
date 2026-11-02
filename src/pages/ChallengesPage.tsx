@@ -8,6 +8,7 @@ import { Btn } from '../components/ui'
 import { useLab } from '../store/useLab'
 import { fmt } from '../utils/format'
 import { tokenize } from '../utils/highlight'
+import { useMsg, useT } from '../i18n'
 
 type Outcome = { mine: BenchmarkResult; refs: BenchmarkResult[] } | { error: string }
 
@@ -30,6 +31,7 @@ export function ChallengesPage() {
   const [solved, setSolved] = useState<Record<string, boolean>>({})
   const loadCustom = useLab((s) => s.loadCustomScheduler)
   const setPage = useLab((s) => s.setPage)
+  const t = useT()
 
   useEffect(() => {
     setCode(load(active))
@@ -50,7 +52,7 @@ export function ChallengesPage() {
     const timer = setTimeout(() => {
       worker.terminate()
       setRunning(false)
-      setOutcome({ error: `Stopped after ${TIME_LIMIT_MS / 1000} s. Does selectNext() contain an endless loop?` })
+      setOutcome({ error: t('Stopped after {s} s. Does selectNext() contain an endless loop?', { s: TIME_LIMIT_MS / 1000 }) })
     }, TIME_LIMIT_MS)
     worker.onmessage = (e: MessageEvent<Outcome>) => {
       clearTimeout(timer)
@@ -83,9 +85,9 @@ export function ChallengesPage() {
   return (
     <div className="grid h-full min-h-0 grid-cols-1 overflow-auto lg:grid-cols-[300px_1fr] lg:overflow-hidden">
       <nav className="border-line bg-surface p-3 lg:overflow-auto lg:border-r">
-        <h1 className="px-1 text-[17px] font-semibold text-ink">Challenges</h1>
+        <h1 className="px-1 text-[17px] font-semibold text-ink">{t('Challenges')}</h1>
         <p className="mt-1 px-1 text-[12.5px] leading-relaxed text-ink-2">
-          Write the scheduler yourself. Your function runs inside the real engine against the same passengers as the built-in algorithms.
+          {t('Write the scheduler yourself. Your function runs inside the real engine against the same passengers as the built-in algorithms.')}
         </p>
         <ol className="mt-4 space-y-1">
           {CHALLENGES.map((c, i) => (
@@ -106,8 +108,8 @@ export function ChallengesPage() {
                   {solved[c.id] ? <Check size={11} /> : i + 1}
                 </span>
                 <span>
-                  <span className={clsx('block text-[13px]', c.id === active ? 'text-accent' : 'text-ink')}>{c.title}</span>
-                  <span className="block text-[11.5px] text-muted">{c.goal}</span>
+                  <span className={clsx('block text-[13px]', c.id === active ? 'text-accent' : 'text-ink')}>{t(c.title)}</span>
+                  <span className="block text-[11.5px] text-muted">{t(c.goal)}</span>
                 </span>
               </button>
             </li>
@@ -117,11 +119,11 @@ export function ChallengesPage() {
 
       <section className="grid min-h-0 grid-rows-[auto_minmax(240px,1fr)_auto] overflow-hidden">
         <header className="border-b border-line px-5 py-4">
-          <h2 className="text-[18px] font-semibold text-ink">{ch.title}</h2>
-          <p className="mt-1 max-w-[720px] text-[13.5px] leading-relaxed text-ink-2">{ch.brief}</p>
+          <h2 className="text-[18px] font-semibold text-ink">{t(ch.title)}</h2>
+          <p className="mt-1 max-w-[720px] text-[13.5px] leading-relaxed text-ink-2">{t(ch.brief)}</p>
           <details className="mt-1.5 text-[12.5px] text-muted">
-            <summary className="cursor-pointer select-none hover:text-ink-2">Show a hint</summary>
-            <p className="mt-1 text-ink-2">{ch.hint}</p>
+            <summary className="cursor-pointer select-none hover:text-ink-2">{t('Show a hint')}</summary>
+            <p className="mt-1 text-ink-2">{t(ch.hint)}</p>
           </details>
         </header>
 
@@ -132,15 +134,15 @@ export function ChallengesPage() {
         <footer className="max-h-[48vh] overflow-auto border-t border-line bg-surface px-5 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <Btn tone="accent" onClick={run} disabled={running}>
-              <Play size={12} /> {running ? 'Running…' : 'Run tests'}
+              <Play size={12} /> {t(running ? 'Running…' : 'Run tests')}
             </Btn>
             <span className="text-[11.5px] text-muted">Ctrl/⌘ + Enter</span>
-            <Btn onClick={() => setCode(STARTER_CODE)} title="Replace your code with the starter code" className="ml-auto">
-              <RotateCcw size={12} /> Reset code
+            <Btn onClick={() => setCode(STARTER_CODE)} title={t('Replace your code with the starter code')} className="ml-auto">
+              <RotateCcw size={12} /> {t('Reset code')}
             </Btn>
             {passed && (
-              <Btn onClick={tryInLab} title="Use your scheduler in the 3D simulation">
-                Watch it in the 3D lab
+              <Btn onClick={tryInLab} title={t('Use your scheduler in the 3D simulation')}>
+                {t('Watch it in the 3D lab')}
               </Btn>
             )}
           </div>
@@ -152,8 +154,10 @@ export function ChallengesPage() {
 }
 
 function Results({ outcome, failure }: { outcome: Outcome; failure: string | null }) {
+  const t = useT()
+  const msg = useMsg()
   if ('error' in outcome) {
-    return <div className="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 font-mono text-[12px] text-danger">{outcome.error}</div>
+    return <div className="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 font-mono text-[12px] text-danger">{msg(outcome.error)}</div>
   }
   const rows = [{ ...outcome.mine, label: 'Your code' }, ...outcome.refs.map((r) => ({ ...r, label: r.algorithm }))]
   return (
@@ -165,14 +169,14 @@ function Results({ outcome, failure }: { outcome: Outcome; failure: string | nul
         )}
       >
         {failure ? <X size={14} /> : <Check size={14} />}
-        {failure ? `Not yet: ${failure}.` : 'Passed. Your scheduler meets the goal.'}
+        {failure ? `${t('Not yet')}: ${msg(failure)}.` : t('Passed. Your scheduler meets the goal.')}
       </div>
       <table className="mt-2 w-full text-left font-mono text-[12px]">
         <thead className="text-faint">
           <tr>
             {['', 'Delivered', 'Average wait', 'Longest wait', 'Average ride', 'Distance', 'Net energy'].map((h) => (
               <th key={h} className="py-1 pr-4 font-sans text-[11.5px] font-normal">
-                {h}
+                {t(h)}
               </th>
             ))}
           </tr>
@@ -180,7 +184,7 @@ function Results({ outcome, failure }: { outcome: Outcome; failure: string | nul
         <tbody>
           {rows.map((r) => (
             <tr key={r.label} className={clsx('border-t border-line/60', r.label === 'Your code' ? 'text-ink' : 'text-muted')}>
-              <td className="py-1 pr-4 font-sans">{r.label}</td>
+              <td className="py-1 pr-4 font-sans">{t(r.label)}</td>
               <td className="pr-4">
                 {r.served}/{r.passengers}
               </td>
@@ -200,7 +204,7 @@ function Results({ outcome, failure }: { outcome: Outcome; failure: string | nul
 /** A light code editor: a transparent textarea over syntax-highlighted text. */
 function CodeEditor({ value, onChange, onRun }: { value: string; onChange: (v: string) => void; onRun: () => void }) {
   const pre = useRef<HTMLPreElement>(null)
-  const lines = useMemo(() => value.split('\n').map(tokenize), [value])
+  const lines = useMemo(() => value.split('\n').map((l) => tokenize(l)), [value])
   const shared = 'm-0 p-4 pl-14 font-mono text-[13px] leading-[21px] whitespace-pre'
   return (
     <div className="relative h-full bg-[#0d1014]">
@@ -218,7 +222,7 @@ function CodeEditor({ value, onChange, onRun }: { value: string; onChange: (v: s
         ))}
       </pre>
       <textarea
-        aria-label="Your scheduler code"
+        aria-label="Your scheduler code / আপনার শিডিউলার কোড"
         spellCheck={false}
         value={value}
         onChange={(e) => onChange(e.target.value)}

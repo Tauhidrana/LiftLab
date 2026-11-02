@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import type { ElevatorState, TraceCategory, TraceLevel } from '../engine/types'
+import { useT } from '../i18n'
 
 export function Btn({
   active,
@@ -61,24 +62,28 @@ export function Segmented<T extends string | number>({
   )
 }
 
+// Plain-string labels are translated here, so callers can pass English text.
 export function PanelHeader({ title, children, icon }: { title: string; children?: ReactNode; icon?: ReactNode }) {
+  const t = useT()
   return (
     <div className="flex h-10 shrink-0 items-center gap-2 border-b border-line px-4">
       {icon && <span className="text-muted">{icon}</span>}
-      <span className="text-[12px] font-semibold tracking-wide text-ink-2 uppercase">{title}</span>
+      <span className="text-[12px] font-semibold tracking-wide text-ink-2 uppercase">{t(title)}</span>
       <div className="ml-auto flex items-center gap-1.5">{children}</div>
     </div>
   )
 }
 
 export function Label({ children }: { children: ReactNode }) {
-  return <div className="mb-2 text-[12px] font-medium text-muted">{children}</div>
+  const t = useT()
+  return <div className="mb-2 text-[12px] font-medium text-muted">{typeof children === 'string' ? t(children) : children}</div>
 }
 
 export function KV({ k, v, mono = true, tone }: { k: ReactNode; v: ReactNode; mono?: boolean; tone?: 'warn' | 'danger' | 'ok' | 'accent' }) {
+  const t = useT()
   return (
     <div className="flex items-baseline justify-between gap-3 py-[3px]">
-      <span className="text-muted">{k}</span>
+      <span className="text-muted">{typeof k === 'string' ? t(k) : k}</span>
       <span
         className={clsx(
           mono && 'font-mono text-[12px]',
@@ -102,10 +107,11 @@ export const STATE_TONE: Record<ElevatorState, string> = {
 }
 
 export function StatePill({ state }: { state: ElevatorState }) {
+  const t = useT()
   return (
     <span className={clsx('inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[10.5px] font-semibold tracking-wide', STATE_TONE[state])}>
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {state.replace('_', ' ')}
+      {t(state.replace('_', ' '))}
     </span>
   )
 }
@@ -126,11 +132,12 @@ export const CATEGORY_COLOR: Record<TraceCategory, string> = {
 }
 
 export function CategoryTag({ category, level }: { category: TraceCategory; level?: TraceLevel }) {
+  const t = useT()
   const c = level === 'danger' ? '#f43f5e' : level === 'warn' ? '#f5a524' : CATEGORY_COLOR[category]
   return (
     <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-ink-2">
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
-      {category}
+      {t(category)}
     </span>
   )
 }

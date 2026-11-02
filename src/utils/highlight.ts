@@ -12,10 +12,17 @@ export interface Token {
 
 const RE = /(\/\/.*$|\/\*.*?\*\/|^\s*\*.*$)|('(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*")|(\b\d+(?:\.\d+)?(?:e-?\d+)?\b)|([A-Za-z_$][\w$]*)/g
 
-export function tokenize(line: string): Token[] {
+const PY_KW = new Set(
+  'def class return if elif else for while in not and or is None True False import from as with try except raise pass lambda self break continue global'.split(' '),
+)
+const PY_RE = /(#.*$)|([fr]?'(?:[^'\\]|\\.)*'|[fr]?"(?:[^"\\]|\\.)*")|(\b\d+(?:\.\d+)?(?:e-?\d+)?\b)|([A-Za-z_][\w]*)/g
+
+export function tokenize(line: string, lang: 'python' | 'typescript' = 'typescript'): Token[] {
+  const py = lang === 'python'
+  const kw = py ? PY_KW : KW
   const out: Token[] = []
   let last = 0
-  for (const m of line.matchAll(RE)) {
+  for (const m of line.matchAll(py ? PY_RE : RE)) {
     const i = m.index!
     if (i > last) out.push({ text: line.slice(last, i) })
     const [text, com, str, num, word] = m
@@ -24,7 +31,7 @@ export function tokenize(line: string): Token[] {
     else if (str) cls = /^'[a-z]+\.[A-Za-z.]+'$/.test(str) ? 'tok-marker' : 'tok-str'
     else if (num) cls = 'tok-num'
     else if (word) {
-      if (KW.has(word)) cls = 'tok-kw'
+      if (kw.has(word)) cls = 'tok-kw'
       else if (/^[A-Z]/.test(word)) cls = 'tok-type'
       else if (line[i + word.length] === '(') cls = 'tok-fn'
     }

@@ -7,6 +7,7 @@ import type { TrafficProfile } from '../engine/types'
 import { Btn, Label, Segmented } from '../components/ui'
 import { useLab } from '../store/useLab'
 import { fmt, fmtTime } from '../utils/format'
+import { useMsg, useT } from '../i18n'
 
 const STRATEGIES: { id: DispatchStrategy; label: string; text: string }[] = [
   { id: 'nearest', label: 'Nearest car', text: 'Send the car that is physically closest, ignoring which way it is going or how busy it is. Simple, but cars bunch together and the closest car is often the wrong one.' },
@@ -68,20 +69,22 @@ export function GroupPage() {
   const g = group.current
   const stats = g.stats()
   const waiting = g.traffic.waiting.length
+  const t = useT()
+  const msg = useMsg()
 
   return (
     <div className="grid h-full min-h-0 grid-cols-1 overflow-auto lg:grid-cols-[280px_1fr_340px] lg:overflow-hidden">
       {/* Controls */}
       <aside className="space-y-5 overflow-auto border-line bg-surface p-4 lg:border-r">
         <div>
-          <h1 className="text-[17px] font-semibold text-ink">Group control</h1>
+          <h1 className="text-[17px] font-semibold text-ink">{t('Group control')}</h1>
           <p className="mt-1 text-[12.5px] leading-relaxed text-ink-2">
-            Several cars share the landing buttons. A dispatcher hands every hall call to exactly one car. Each car still runs its own controller.
+            {t('Several cars share the landing buttons. A dispatcher hands every hall call to exactly one car. Each car still runs its own controller.')}
           </p>
         </div>
         <div>
           <Label>Cars</Label>
-          <Segmented value={cars} onChange={setCars} options={[2, 3, 4].map((n) => ({ value: n, label: `${n} cars` }))} />
+          <Segmented value={cars} onChange={setCars} options={[2, 3, 4].map((n) => ({ value: n, label: t('{n} cars', { n }) }))} />
         </div>
         <div>
           <Label>Dispatch strategy</Label>
@@ -95,8 +98,8 @@ export function GroupPage() {
                   strategy === s.id ? 'border-accent/50 bg-accent/[0.07]' : 'border-line bg-surface-2 hover:border-line-strong',
                 )}
               >
-                <div className={clsx('text-[13px] font-medium', strategy === s.id ? 'text-accent' : 'text-ink')}>{s.label}</div>
-                <div className="mt-0.5 text-[11.5px] leading-snug text-muted">{s.text}</div>
+                <div className={clsx('text-[13px] font-medium', strategy === s.id ? 'text-accent' : 'text-ink')}>{t(s.label)}</div>
+                <div className="mt-0.5 text-[11.5px] leading-snug text-muted">{t(s.text)}</div>
               </button>
             ))}
           </div>
@@ -108,24 +111,24 @@ export function GroupPage() {
             value={profile}
             onChange={setProfile}
             options={[
-              { value: 'uniform', label: 'Uniform' },
-              { value: 'up-peak', label: 'Morning' },
-              { value: 'down-peak', label: 'Evening' },
-              { value: 'lunch', label: 'Lunch' },
+              { value: 'uniform', label: t('Uniform') },
+              { value: 'up-peak', label: t('Morning') },
+              { value: 'down-peak', label: t('Evening') },
+              { value: 'lunch', label: t('Lunch') },
             ]}
           />
           <div className="mt-3 flex items-center gap-3">
-            <input type="range" min={2} max={16} value={rate} onChange={(e) => setRate(Number(e.target.value))} className="flex-1 accent-[var(--color-accent)]" aria-label="Arrivals per minute" />
-            <span className="w-24 text-right font-mono text-[12px] text-ink">{rate} people/min</span>
+            <input type="range" min={2} max={16} value={rate} onChange={(e) => setRate(Number(e.target.value))} className="flex-1 accent-[var(--color-accent)]" aria-label={t('Arrivals per minute')} />
+            <span className="w-24 text-right font-mono text-[12px] text-ink">{t('{n} people/min', { n: rate })}</span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Btn onClick={() => setPaused(!paused)}>
-            {paused ? <Play size={12} /> : <Pause size={12} />} {paused ? 'Resume' : 'Pause'}
+            {paused ? <Play size={12} /> : <Pause size={12} />} {t(paused ? 'Resume' : 'Pause')}
           </Btn>
           <Segmented size="sm" value={speed} onChange={setSpeed} options={[1, 2, 4, 8].map((v) => ({ value: v, label: `${v}×` }))} />
-          <Btn onClick={() => setSeed(seed + 1)} title="Restart with the same traffic">
-            <RotateCcw size={12} /> Restart
+          <Btn onClick={() => setSeed(seed + 1)} title={t('Restart with the same traffic')}>
+            <RotateCcw size={12} /> {t('Restart')}
           </Btn>
         </div>
       </aside>
@@ -133,11 +136,11 @@ export function GroupPage() {
       {/* Monitor */}
       <section className="flex min-h-[520px] flex-col overflow-hidden">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line px-4 py-2.5 text-[12.5px]">
-          <Stat label="Time" value={fmtTime(g.time)} />
-          <Stat label="Waiting now" value={String(waiting)} />
-          <Stat label="Served" value={String(stats.served)} />
-          <Stat label="Average wait" value={`${fmt(stats.avgWait, 1)} s`} strong />
-          <Stat label="Longest wait" value={`${fmt(stats.maxWait, 0)} s`} />
+          <Stat label={t('Time')} value={fmtTime(g.time)} />
+          <Stat label={t('Waiting now')} value={String(waiting)} />
+          <Stat label={t('Served')} value={String(stats.served)} />
+          <Stat label={t('Average wait')} value={`${fmt(stats.avgWait, 1)} s`} strong />
+          <Stat label={t('Longest wait')} value={`${fmt(stats.maxWait, 0)} s`} />
         </div>
         <div className="min-h-0 flex-1 overflow-auto p-4">
           <Monitor g={g} />
@@ -147,11 +150,11 @@ export function GroupPage() {
       {/* Dispatcher */}
       <aside className="flex min-h-0 flex-col border-line bg-surface lg:border-l">
         <div className="border-b border-line px-4 py-3">
-          <div className="text-[13px] font-semibold text-ink">Dispatcher decisions</div>
-          <div className="text-[12px] text-muted">Score per car, lower wins. Newest first.</div>
+          <div className="text-[13px] font-semibold text-ink">{t('Dispatcher decisions')}</div>
+          <div className="text-[12px] text-muted">{t('Score per car, lower wins. Newest first.')}</div>
         </div>
         <div className="min-h-0 flex-1 overflow-auto px-2 py-1">
-          {g.log.length === 0 && <p className="p-2 text-[12.5px] text-muted">Waiting for the first hall call.</p>}
+          {g.log.length === 0 && <p className="p-2 text-[12.5px] text-muted">{t('Waiting for the first hall call.')}</p>}
           {[...g.log].reverse().slice(0, 40).map((d, i) => (
             <div key={`${d.t}-${i}`} className="border-b border-line/60 px-2 py-2">
               <div className="flex items-baseline gap-2">
@@ -160,7 +163,7 @@ export function GroupPage() {
                   {d.floor}
                   {d.direction === 'UP' ? '▲' : '▼'}
                 </span>
-                <span className="text-[12.5px] text-ink">goes to car {carName(d.car)}</span>
+                <span className="text-[12.5px] text-ink">{t('goes to car {c}', { c: carName(d.car) })}</span>
               </div>
               <div className="mt-1 flex gap-1">
                 {d.scores.map((s, c) => (
@@ -171,11 +174,11 @@ export function GroupPage() {
                       c === d.car ? 'bg-accent/15 text-accent' : 'bg-surface-3 text-muted',
                     )}
                   >
-                    {carName(c)} {s >= 100 ? (d.strategy === 'zoning' ? 'other zone' : '—') : fmt(s, 1)}
+                    {carName(c)} {s >= 100 ? (d.strategy === 'zoning' ? t('other zone') : '—') : fmt(s, 1)}
                   </span>
                 ))}
               </div>
-              <div className="mt-0.5 text-[11.5px] text-muted">{d.reason}</div>
+              <div className="mt-0.5 text-[11.5px] text-muted">{msg(d.reason)}</div>
             </div>
           ))}
         </div>
@@ -205,9 +208,10 @@ function Monitor({ g }: { g: GroupController }) {
   const height = floors * row + 54
   const yOf = (pos: number) => 34 + (floors - 1) * row - (pos / g.config.floorHeight) * row
   const waiting = g.traffic.waiting
+  const t = useT()
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="mx-auto block h-auto w-full" style={{ maxWidth: width * 1.15 }} role="img" aria-label="Group monitor">
+    <svg viewBox={`0 0 ${width} ${height}`} className="mx-auto block h-auto w-full" style={{ maxWidth: width * 1.15 }} role="img" aria-label={t('Group monitor')}>
       {Array.from({ length: floors }, (_, i) => {
         const f = i + 1
         const y = yOf((f - 1) * g.config.floorHeight)
@@ -243,7 +247,7 @@ function Monitor({ g }: { g: GroupController }) {
         return (
           <g key={i}>
             <text x={x + col / 2} y={16} textAnchor="middle" fontSize="12" fill="#e8eaed" fontFamily="IBM Plex Sans" fontWeight={600}>
-              Car {carName(i)}
+              {t('Car {c}', { c: carName(i) })}
             </text>
             <rect x={x} y={34} width={col} height={floors * row} rx={4} fill="#14171c" stroke="#252a32" />
             {/* promised stops */}
@@ -261,7 +265,7 @@ function Monitor({ g }: { g: GroupController }) {
               {riders}/8
             </text>
             <text x={x + col / 2} y={height - 6} textAnchor="middle" fontSize="11" fill="#5e6672" fontFamily="IBM Plex Mono">
-              {state === 'IDLE' ? 'idle' : state.startsWith('MOVING') ? (c.direction === 'UP' ? 'up' : 'down') : state.startsWith('DOOR') ? 'doors' : 'stop'}
+              {t(state === 'IDLE' ? 'idle' : state.startsWith('MOVING') ? (c.direction === 'UP' ? 'up' : 'down') : state.startsWith('DOOR') ? 'doors' : 'stop')}
             </text>
           </g>
         )
@@ -274,14 +278,15 @@ function Monitor({ g }: { g: GroupController }) {
 function Comparison({ config, cars }: { config: Parameters<typeof runGroupBenchmark>[0]; cars: number }) {
   const [rows, setRows] = useState<{ label: string; wait: number; max: number }[] | null>(null)
   const [busy, setBusy] = useState(false)
+  const t = useT()
   const run = () => {
     setBusy(true)
     setTimeout(() => {
       const single = runBenchmark(config, ['LOOK'])[0]
       const group = runGroupBenchmark(config, cars, ['nearest', 'eta', 'zoning'])
       setRows([
-        { label: '1 car', wait: single.avgWait, max: single.maxWait },
-        ...group.map((r) => ({ label: `${cars} cars, ${STRATEGIES.find((s) => s.id === r.strategy)!.label}`, wait: r.avgWait, max: r.maxWait })),
+        { label: t('1 car'), wait: single.avgWait, max: single.maxWait },
+        ...group.map((r) => ({ label: `${t('{n} cars', { n: cars })}, ${t(STRATEGIES.find((s) => s.id === r.strategy)!.label)}`, wait: r.avgWait, max: r.maxWait })),
       ])
       setBusy(false)
     }, 20)
@@ -291,12 +296,12 @@ function Comparison({ config, cars }: { config: Parameters<typeof runGroupBenchm
   return (
     <div className="border-t border-line p-4">
       <div className="flex items-center justify-between">
-        <div className="text-[13px] font-semibold text-ink">Average wait, 10 minutes of the same traffic</div>
+        <div className="text-[13px] font-semibold text-ink">{t('Average wait, 10 minutes of the same traffic')}</div>
       </div>
       {rows ? (
         <div className="mt-3 space-y-2">
           {rows.map((r) => (
-            <div key={r.label} title={`${r.label}: average ${fmt(r.wait, 1)} s, longest ${fmt(r.max, 0)} s`}>
+            <div key={r.label} title={t('{l}: average {a} s, longest {m} s', { l: r.label, a: fmt(r.wait, 1), m: fmt(r.max, 0) })}>
               <div className="flex justify-between text-[11.5px]">
                 <span className="text-ink-2">{r.label}</span>
                 <span className={clsx('font-mono', r.wait === best ? 'text-ink' : 'text-muted')}>{fmt(r.wait, 1)} s</span>
@@ -308,10 +313,10 @@ function Comparison({ config, cars }: { config: Parameters<typeof runGroupBenchm
           ))}
         </div>
       ) : (
-        <p className="mt-1 text-[12px] text-muted">Runs the real engine headless for each option.</p>
+        <p className="mt-1 text-[12px] text-muted">{t('Runs the real engine headless for each option.')}</p>
       )}
       <Btn tone="accent" className="mt-3" onClick={run} disabled={busy}>
-        {busy ? 'Running…' : rows ? 'Run again' : 'Compare strategies'}
+        {t(busy ? 'Running…' : rows ? 'Run again' : 'Compare strategies')}
       </Btn>
     </div>
   )

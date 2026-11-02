@@ -7,6 +7,7 @@ import { TransportBar } from '../components/Dashboard/TransportBar'
 import { Viewport } from '../components/Elevator3D/Viewport'
 import { EventTimeline } from '../components/EventTimeline/EventTimeline'
 import { useLab } from '../store/useLab'
+import { useT } from '../i18n'
 
 type Tab = 'controls' | 'inspector' | 'panels'
 
@@ -14,6 +15,7 @@ type Tab = 'controls' | 'inspector' | 'panels'
 export function MobileSimulation() {
   const [tab, setTab] = useState<Tab>('controls')
   const bottom = useLab((s) => s.bottomTab)
+  const t = useT()
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="h-[42vh] shrink-0 border-b border-line">
@@ -32,7 +34,7 @@ export function MobileSimulation() {
             onClick={() => setTab(id)}
             className={clsx('h-7 flex-1 rounded text-[12px]', tab === id ? 'bg-surface-3 text-ink' : 'text-muted')}
           >
-            {label}
+            {t(label)}
           </button>
         ))}
       </div>

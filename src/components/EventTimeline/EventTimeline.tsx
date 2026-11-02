@@ -5,6 +5,8 @@ import { useLab } from '../../store/useLab'
 import { fmtTime } from '../../utils/format'
 import { CATEGORY_COLOR } from '../ui'
 import { useInspectedEvent } from '../CodeInspector/CodeInspector'
+import { useMsg, useT } from '../../i18n'
+import { fnLabel } from '../../engine/sources'
 
 const FILTERS: { id: 'all' | TraceCategory | 'issues'; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -26,6 +28,9 @@ export function EventTimeline() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all')
   const box = useRef<HTMLDivElement>(null)
   const stick = useRef(true)
+  const t = useT()
+  const msg = useMsg()
+  const codeLang = useLab((s) => s.codeLang)
 
   const rows = useMemo(
     () =>
@@ -52,10 +57,10 @@ export function EventTimeline() {
             onClick={() => setFilter(f.id)}
             className={clsx('h-5 rounded px-1.5 text-[11px]', filter === f.id ? 'bg-surface-3 text-ink' : 'text-muted hover:text-ink-2')}
           >
-            {f.label}
+            {t(f.label)}
           </button>
         ))}
-        <span className="ml-auto font-mono text-[10px] text-faint">{rows.length} events{debug ? ' · verbose on' : ''}</span>
+        <span className="ml-auto font-mono text-[10px] text-faint">{t('{n} events', { n: rows.length })}{debug ? ` · ${t('verbose on')}` : ''}</span>
       </div>
       <div
         ref={box}
@@ -87,9 +92,9 @@ export function EventTimeline() {
                 <td className={clsx('w-[220px] truncate pr-2', e.level === 'danger' ? 'text-danger' : e.level === 'warn' ? 'text-warn' : 'text-ink')}>
                   {e.event}
                 </td>
-                <td className="w-[250px] truncate pr-2 text-[#82aaff]">{e.fn}</td>
-                <td className="truncate pr-3 font-sans text-[12px] text-ink-2" title={e.message}>
-                  {e.message}
+                <td className="w-[250px] truncate pr-2 text-[#82aaff]">{fnLabel(e.fn, codeLang)}</td>
+                <td className="truncate pr-3 font-sans text-[12px] text-ink-2" title={msg(e.message)}>
+                  {msg(e.message)}
                 </td>
               </tr>
             ))}

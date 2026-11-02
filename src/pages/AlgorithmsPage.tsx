@@ -5,6 +5,7 @@ import { runBenchmark, type BenchmarkResult } from '../engine/benchmark'
 import type { Algorithm, TrafficProfile } from '../engine/types'
 import { Btn, Label, Segmented } from '../components/ui'
 import { useLab } from '../store/useLab'
+import { useT } from '../i18n'
 import { fmt } from '../utils/format'
 
 const ALGOS: { id: Algorithm; name: string; idea: string; good: string; bad: string; code: string }[] = [
@@ -60,6 +61,7 @@ export function AlgorithmsPage() {
   const [results, setResults] = useState<BenchmarkResult[] | null>(null)
   const [running, setRunning] = useState(false)
   const [tip, setTip] = useState<string | null>(null)
+  const t = useT()
 
   const run = () => {
     setRunning(true)
@@ -73,10 +75,9 @@ export function AlgorithmsPage() {
   return (
     <div className="h-full overflow-auto">
       <div className="mx-auto max-w-[1180px] px-6 py-6">
-        <h1 className="text-[20px] font-semibold text-ink">Scheduling algorithms</h1>
+        <h1 className="text-[20px] font-semibold text-ink">{t('Scheduling algorithms')}</h1>
         <p className="mt-1 max-w-[760px] text-[13px] leading-relaxed text-ink-2">
-          The scheduler answers one question, over and over: <i>“given every pending request and where the car is, which floor next?”</i> Below, the real
-          engine runs the same 10 minutes of seeded passenger traffic through each algorithm — headless, at thousands of times real speed.
+          {t('The scheduler answers one question, over and over: “given every pending request and where the car is, which floor next?” Below, the real engine runs the same 10 minutes of seeded passenger traffic through each algorithm, headless, at thousands of times real speed.')}
         </p>
 
         <div className="mt-5 flex flex-wrap items-end gap-5 rounded-lg border border-line bg-surface p-3">
@@ -86,15 +87,15 @@ export function AlgorithmsPage() {
               value={profile}
               onChange={setProfile}
               options={[
-                { value: 'uniform', label: 'Uniform' },
-                { value: 'up-peak', label: 'Morning up-peak' },
-                { value: 'down-peak', label: 'Evening down-peak' },
-                { value: 'lunch', label: 'Lunch' },
+                { value: 'uniform', label: t('Uniform') },
+                { value: 'up-peak', label: t('Morning up-peak') },
+                { value: 'down-peak', label: t('Evening down-peak') },
+                { value: 'lunch', label: t('Lunch') },
               ]}
             />
           </div>
           <div>
-            <Label>Arrivals · {rate}/min</Label>
+            <Label>{`${t('Arrivals')} · ${rate}/min`}</Label>
             <input type="range" min={1} max={10} value={rate} onChange={(e) => setRate(Number(e.target.value))} className="w-40 accent-[var(--color-accent)]" />
           </div>
           <div>
@@ -107,9 +108,9 @@ export function AlgorithmsPage() {
             />
           </div>
           <Btn tone="accent" onClick={run} disabled={running}>
-            <Play size={12} /> {running ? 'Running…' : 'Run comparison'}
+            <Play size={12} /> {t(running ? 'Running…' : 'Run comparison')}
           </Btn>
-          {results && <span className="font-mono text-[11px] text-muted">{results[0].passengers} passengers · same arrivals for every algorithm</span>}
+          {results && <span className="font-mono text-[11px] text-muted">{t('{n} passengers · same arrivals for every algorithm', { n: results[0].passengers })}</span>}
         </div>
 
         {results && (
@@ -120,8 +121,8 @@ export function AlgorithmsPage() {
               const best = m.lowerBetter ? Math.min(...vals) : Math.max(...vals)
               return (
                 <div key={m.key} className="rounded-lg border border-line bg-surface p-3">
-                  <div className="text-[12px] font-medium text-ink">{m.label}</div>
-                  <div className="mb-2 font-mono text-[10px] text-faint">{m.unit} · lower is better</div>
+                  <div className="text-[12px] font-medium text-ink">{t(m.label)}</div>
+                  <div className="mb-2 font-mono text-[10px] text-faint">{m.unit} · {t('lower is better')}</div>
                   <div className="space-y-1.5">
                     {results.map((r) => {
                       const v = r[m.key] as number
@@ -129,7 +130,7 @@ export function AlgorithmsPage() {
                         <div
                           key={r.algorithm}
                           className="group flex items-center gap-2"
-                          onMouseEnter={() => setTip(`${r.algorithm} · ${m.label}: ${fmt(v, m.digits)} ${m.unit}`)}
+                          onMouseEnter={() => setTip(`${r.algorithm} · ${t(m.label)}: ${fmt(v, m.digits)} ${m.unit}`)}
                           onMouseLeave={() => setTip(null)}
                         >
                           <span className="w-10 font-mono text-[10.5px] text-ink-2">{r.algorithm}</span>
@@ -153,13 +154,13 @@ export function AlgorithmsPage() {
 
         {results && (
           <details className="mt-1 rounded-lg border border-line bg-surface">
-            <summary className="cursor-pointer px-3 py-2 text-[12px] text-ink-2">Table view</summary>
+            <summary className="cursor-pointer px-3 py-2 text-[12px] text-ink-2">{t('Table view')}</summary>
             <table className="w-full font-mono text-[11.5px]">
               <thead className="text-faint">
                 <tr className="border-y border-line">
                   {['Algorithm', 'Served', 'Avg wait', 'Max wait', 'Avg ride', 'Avg journey', 'Distance', 'Trips', 'Net energy'].map((h) => (
                     <th key={h} className="px-3 py-1.5 text-left font-normal">
-                      {h}
+                      {t(h)}
                     </th>
                   ))}
                 </tr>
@@ -190,19 +191,19 @@ export function AlgorithmsPage() {
             <div key={a.id} className="rounded-lg border border-line bg-surface p-4">
               <div className="flex items-baseline gap-2">
                 <span className="font-mono text-[13px] font-semibold text-accent">{a.id}</span>
-                <span className="text-[13px] text-ink">{a.name}</span>
-                {config.algorithm === a.id && <span className="ml-auto font-mono text-[10px] text-ok">ACTIVE IN SIMULATION</span>}
+                <span className="text-[13px] text-ink">{t(a.name)}</span>
+                {config.algorithm === a.id && <span className="ml-auto font-mono text-[10px] text-ok">{t('ACTIVE IN SIMULATION')}</span>}
               </div>
-              <p className="mt-1.5 text-[12.5px] text-ink-2">{a.idea}</p>
+              <p className="mt-1.5 text-[12.5px] text-ink-2">{t(a.idea)}</p>
               <pre className="mt-2 overflow-auto rounded border border-line bg-[#0d1014] p-2 font-mono text-[11.5px] leading-relaxed text-ink-2">{a.code}</pre>
               <div className="mt-2 grid grid-cols-2 gap-3 text-[12px]">
                 <div>
                   <span className="text-ok">+ </span>
-                  <span className="text-ink-2">{a.good}</span>
+                  <span className="text-ink-2">{t(a.good)}</span>
                 </div>
                 <div>
                   <span className="text-warn">− </span>
-                  <span className="text-ink-2">{a.bad}</span>
+                  <span className="text-ink-2">{t(a.bad)}</span>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">
@@ -213,15 +214,14 @@ export function AlgorithmsPage() {
                     setPage('simulation')
                   }}
                 >
-                  Use in live simulation
+                  {t('Use in live simulation')}
                 </Btn>
               </div>
             </div>
           ))}
         </div>
         <p className="mt-5 text-[12px] text-muted">
-          Source: <span className="font-mono text-ink-2">RequestScheduler.selectNext()</span> — open it in the Code Inspector. Large buildings use group control
-          and destination dispatch across many cars; that is a planned extension of this lab.
+          {t('Source')}: <span className="font-mono text-ink-2">RequestScheduler.selectNext()</span>. {t('Open it in the Code Inspector. Large buildings use group control across many cars: see the Group control page.')}
         </p>
       </div>
     </div>

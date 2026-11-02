@@ -1,5 +1,7 @@
 import { CameraControls, CameraControlsImpl } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Bloom, EffectComposer, SSAO, ToneMapping, Vignette } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
@@ -23,7 +25,8 @@ export function ElevatorScene({ variant = 'simulation' }: { variant?: 'simulatio
       gl={{ antialias: true, localClippingEnabled: true } as THREE.WebGLRendererParameters & { localClippingEnabled: boolean }}
       onCreated={({ gl }) => {
         gl.localClippingEnabled = true
-        gl.toneMapping = THREE.ACESFilmicToneMapping
+        // Tone mapping happens in the post-processing pass (see Effects).
+        gl.toneMapping = THREE.NoToneMapping
       }}
       onPointerMissed={() => variant === 'architecture' && useLab.getState().selectComponent(null)}
     >
@@ -67,12 +70,26 @@ function SceneContents({ variant }: { variant: 'simulation' | 'architecture' }) 
         shadow-normalBias={0.02}
       />
       {xray && <gridHelper args={[60, 60, '#1f2630', '#161b22']} position={[0, -0.2, 0]} />}
-      <Building d={d} xray={xray} clip={clip} display={display} />
+      <Building d={d} xray={xray} clip={clip} display={display} lobby={camera === 'interior' && !xray} />
       <Machinery d={d} xray={xray} />
-      <Car d={d} display={display} xray={xray} />
+      <Car d={d} display={display} xray={xray} mirror={camera === 'interior'} />
       {xray && <Flows d={d} />}
       <CameraRig d={d} variant={variant} />
+      <Effects xray={xray} />
     </>
+  )
+}
+
+/** Ambient occlusion (contact shadows in corners), bloom on lamps and displays, filmic tone mapping. */
+function Effects({ xray }: { xray: boolean }) {
+  return (
+    // N8AO is not compatible with three r187's render targets; postprocessing's own SSAO is.
+    <EffectComposer multisampling={4} enableNormalPass={!xray}>
+      {xray ? <></> : <SSAO samples={21} radius={0.12} intensity={22} luminanceInfluence={0.5} worldDistanceThreshold={6} worldDistanceFalloff={2} worldProximityThreshold={0.6} worldProximityFalloff={0.3} />}
+      <Bloom mipmapBlur luminanceThreshold={0.95} intensity={xray ? 0.35 : 0.55} />
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      <Vignette offset={0.3} darkness={0.45} />
+    </EffectComposer>
   )
 }
 
